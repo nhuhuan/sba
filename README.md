@@ -1,2 +1,2 @@
-# sba
+# SBA
 Static Binary Analysis Framework
