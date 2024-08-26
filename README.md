@@ -1,2 +1,2 @@
 # sba
-A Static Binary Analysis Platform
+Static Binary Analysis Framework
