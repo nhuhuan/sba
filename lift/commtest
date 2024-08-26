@@ -1,0 +1,29 @@
+automatonTest() {
+  outd="out"
+  cord="cor"
+  mkdir -p $outd
+  extension="${1##*.}"
+  base="${1%.*}"
+  dotf="$base.dot"
+  echo "${1}: "
+  ../learnopt -d 1 -tr $1 -dotf "$outd/$dotf"
+  n=`diff "$cord/$dotf" "$outd/$dotf" | wc -l`
+  if (( n  != 0 )); then 
+     echo "--------- $n lines of diff"
+  fi
+}
+
+crossTest() {
+  inpd="${1}"
+  outd="$inpd/out"
+  cord="$inpd/cor"
+  mkdir -p $outd
+  ./learnopt -d 1 -tr "$inpd/${2}.imap" -l "$inpd/${2}.s" -o "$outd/${2}.rtl"
+  echo -n "$inpd/: ${2}.rtl: "
+  n=`diff "$cord/${2}.rtl" "$outd/${2}.rtl" | wc -l`
+  if (( n  == 0 )); then 
+     echo "passed"
+     rm -f "$outd/${2}.auto"
+  else echo "$n lines of diff"
+  fi
+}
