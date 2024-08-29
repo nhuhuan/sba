@@ -1,6 +1,8 @@
 /*
-   Copyright (C) 2018 - 2024 by Huan Nguyen in Secure Systems Lab,
-   Stony Brook University, Stony Brook, NY 11794.
+   Static Binary Analysis Framework                               
+                                                                  
+   Copyright (C) 2018 - 2025 by Huan Nguyen in Secure Systems Lab,
+   Stony Brook University, Stony Brook, NY 11794.                 
 */
 
 #include "domain.h"
@@ -1052,9 +1054,8 @@ void Taint::lshift(const Taint& object) {
    }
 }
 
-/* ---------------------------------- BaseStride ---------------------------------- */
-/* 			            (SJA's Domain) 			            */
-
+/* ------------------------------- BaseStride ------------------------------- */
+/* 			                     (SJA's Domain) 			                     */
 BaseStride::~BaseStride() {
    if (x != nullptr) delete x;
    if (next != nullptr) delete next;

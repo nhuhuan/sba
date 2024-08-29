@@ -5,31 +5,30 @@
 # Copyright (C) 2014 - 2015 by Niranjan Hasabnis and R.Sekar in Secure Systems
 # Lab, Stony Brook University, Stony Brook, NY 11794.
 
-# This program is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published by 
-# the Free Software Foundation; either version 2 of the License, or 
-# (at your option) any later version. 
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version. 
 
-# This program is distributed in the hope that it will be useful, 
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
-# GNU General Public License for more details. 
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. 
 
-# You should have received a copy of the GNU General Public License 
-# along with this program; if not, write to the Free Software 
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+# Place, Suite 330, Boston, MA 02111-1307 USA.
 
 #CC=gcc-7.3
 
-#FMT=ATT
+.DEFAULT_GOAL := all
+
 FMT=ITC
+#FMT=ATT
 # FMT=ARM
 # FMT=AVR
 
 export OCAMLRUNPARAM=b
 TESTS := $(wildcard *.imap)
-TESTDOT := $(TESTS:%.imap=%.dot)
-TESTPDF := $(TESTS:%.imap=%.pdf)
 
 LEX_FILES := $(wildcard *.mll)
 YACC_FILES := $(wildcard *.mly) 
@@ -69,17 +68,10 @@ learn: learn.cmi ${FMT_PARSER}.cmi lexAsm.cmo ${FMT_PARSER}.cmo parseRtl.cmi lex
 
 main.cmx: main.ml learn.ml learn.mli
 
-interface: learn.cmi ${FMT_PARSER}.cmi lexAsm.cmx ${FMT_PARSER}.cmx parseRtl.cmi lexRtl.cmx parseRtl.cmx learn.cmx
-	$(CAMLOPTC) -output-obj -o ocaml_interface.o str.cmxa learn.cmx lexAsm.cmx ${FMT_PARSER}.cmx lexRtl.cmx parseRtl.cmx main.ml
+lift_x86: learn.cmi ${FMT_PARSER}.cmi lexAsm.cmx ${FMT_PARSER}.cmx parseRtl.cmi lexRtl.cmx parseRtl.cmx learn.cmx
+	$(CAMLOPTC) -output-obj -o lift_x86.o str.cmxa learn.cmx lexAsm.cmx ${FMT_PARSER}.cmx lexRtl.cmx parseRtl.cmx main.ml
 
-all: interface learnopt
-
-%.dot: %.imap
-	./learnopt -tr $< -dotf $(<:%.imap=%.dot)
-
-%.pdf: %.dot
-	dot -Tpdf -Nshape=box $< > $(<:%.dot=%.pdf)
-	evince $(<:%.dot=%.pdf)
+all: lift_x86 learnopt
 
 .PHONY: check
 check:
@@ -97,11 +89,6 @@ check:
 		fi  \
 	done; \
 
-alldot: $(TESTDOT)
-
-allpdf: $(TESTPDF)
-
 clean:
 	rm -f learnopt learn *.o *.cmi *.cmo *.cmx *.a *.so *.cma *.cmxa
 	rm -f $(GENERATED_ML_FILES)
-#	rm -f *.output

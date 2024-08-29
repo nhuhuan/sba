@@ -1,12 +1,14 @@
 /*
-   Copyright (C) 2018 - 2024 by Huan Nguyen in Secure Systems Lab,
-   Stony Brook University, Stony Brook, NY 11794.
+   Static Binary Analysis Framework                               
+                                                                  
+   Copyright (C) 2018 - 2025 by Huan Nguyen in Secure Systems Lab,
+   Stony Brook University, Stony Brook, NY 11794.                 
 */
 
 #ifndef DOMAIN_H
 #define DOMAIN_H
 
-#include "user.h"
+#include "eval.h"
 #include "common.h"
 
 namespace SBA {

@@ -1,6 +1,8 @@
 /*
-   Copyright (C) 2018 - 2024 by Huan Nguyen in Secure Systems Lab,
-   Stony Brook University, Stony Brook, NY 11794.
+   Static Binary Analysis Framework                               
+                                                                  
+   Copyright (C) 2018 - 2025 by Huan Nguyen in Secure Systems Lab,
+   Stony Brook University, Stony Brook, NY 11794.                 
 */
 
 #ifndef TYPE_H
@@ -17,15 +19,15 @@ namespace SBA {
    enum class COMPARE: char {EQ, NE, GT, GE, LT, LE, GTU, GEU, LTU, LEU, OTHER, NONE};
    enum class TRACK:   char {BEFORE, AFTER};
 
-   constexpr const IMM bound(REGION r, uint8_t side)
+   constexpr IMM bound(REGION r, uint8_t side)
       {return (IMM)((int)r==0? (side==0?                 1: ARCH::NUM_REG-1):
                    ((int)r==1? (side==0?  STACK_OFFSET_MIN: STACK_OFFSET_MAX):
                                (side==0? STATIC_OFFSET_MIN: STATIC_OFFSET_MAX)));}
-   constexpr const IMM size(REGION r) {return bound(r,1)-bound(r,0)+1;};
-   constexpr const IMM base(REGION r) {return r==REGION::STACK?
-      size(REGION::REGISTER)+1: size(REGION::REGISTER)+1+size(REGION::STACK)+2;};
-   constexpr const bool bounded(REGION r, IMM offset)
-      {return offset >= bound(r,0) && offset <= bound(r,1);};
+   constexpr IMM size(REGION r) {return bound(r,1)-bound(r,0)+1;}
+   constexpr IMM base(REGION r) {return r==REGION::STACK?
+      size(REGION::REGISTER)+1: size(REGION::REGISTER)+1+size(REGION::STACK)+2;}
+   constexpr bool bounded(REGION r, IMM offset)
+      {return offset >= bound(r,0) && offset <= bound(r,1);}
    /* -------------------------------------------------------- */
    class UnitId {
     public:

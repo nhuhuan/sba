@@ -1,6 +1,22 @@
-# SBA
-Static Binary Analysis Framework
+# SBA: Static Binary Analysis Framework
+SBA is a
 
-To be updated ...
+## Getting Started
+### Dependencies:
+```
+sudo apt-get install ocaml camlp4-extra camlp4
+```
+### Build SBA
+```
+mkdir build && cd build
+cmake ..
+make
+```
+### Prepare
+```
+lift/learnopt -tr lift/dataset/x86_64.imap -m lift/dataset/manual.imap -as /tmp/x86_64.auto
+```
 
-Meanwhile, please visit the artifact in the following, which has been verified by ISSTA '24: https://doi.org/10.5281/zenodo.12670597
+## Analysis
+### Jump Table Analysis
+
