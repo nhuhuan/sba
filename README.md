@@ -23,10 +23,15 @@ make
 ```
 ### Prepare
 ```
-lift/learnopt -tr lift/dataset/x86_64.imap -m lift/dataset/manual.imap -as /tmp/x86_64.auto
+cd lift
+tar -xf dataset.tar.xz
+./learnopt -tr dataset/x86_64.imap -m dataset/manual.imap -as /tmp/sba/x86_64.auto
 ```
 
 ## Analysis
 ### Jump Table Analysis
-
+```
+mkdir -p /tmp/sba
+./jump_table /tmp/sba/x86_64.auto obj 0
+```
 

@@ -18,14 +18,12 @@
 # this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 # Place, Suite 330, Boston, MA 02111-1307 USA.
 
-#CC=gcc-7.3
-
 .DEFAULT_GOAL := all
 
 FMT=ITC
 #FMT=ATT
-# FMT=ARM
-# FMT=AVR
+#FMT=ARM
+#FMT=AVR
 
 export OCAMLRUNPARAM=b
 TESTS := $(wildcard *.imap)

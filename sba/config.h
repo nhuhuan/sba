@@ -1,5 +1,5 @@
 /*
-   Static Binary Analysis Framework                               
+   SBA: Static Binary Analysis Framework                          
                                                                   
    Copyright (C) 2018 - 2025 by Huan Nguyen in Secure Systems Lab,
    Stony Brook University, Stony Brook, NY 11794.                 
@@ -30,7 +30,7 @@
 #define IMM                int32_t
 #define  oo                ((IMM)100000000)
 #define _oo                ((IMM)-100000000)
-#define WORKING_DIR        "/tmp/sja/"
+#define WORKING_DIR        "/tmp/sba/"
 
 
 /* state */

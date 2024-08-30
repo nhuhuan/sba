@@ -17,7 +17,5 @@ add_executable(jump_table analysis/jump_table.cpp
                sba/arch.cpp sba/type.cpp sba/common.cpp lift/lift_x86.o)
 
 target_compile_features(jump_table PRIVATE cxx_std_20)
-
 target_link_directories(jump_table PRIVATE /usr/lib/ocaml/)
-
 target_link_libraries(jump_table PRIVATE asmrun_shared camlstr)

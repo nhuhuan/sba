@@ -1,5 +1,5 @@
 /*
-   Static Binary Analysis Framework                               
+   SBA: Static Binary Analysis Framework                          
                                                                   
    Copyright (C) 2018 - 2025 by Huan Nguyen in Secure Systems Lab,
    Stony Brook University, Stony Brook, NY 11794.                 

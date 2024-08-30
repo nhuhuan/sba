@@ -45,8 +45,6 @@ Function* f = nullptr;
 IMM i_total = 0;
 unordered_set<IMM> checked_func;
 unordered_map<IMM,IMM> f_args;
-string dir = "";
-uint8_t thr = 0;
 /* -------------------------------------------------------------------------- */
 void func_stats(IMM& f_cnt, IMM& s_cnt, IMM& b_cnt, IMM& i_cnt) {
    IMM b_cnt2 = 0;
@@ -110,21 +108,18 @@ IMM args_cnt() {
    else
       return 0;
 }
-
-
-void jump_table() {
-}
 /* -------------------------------------------------------------------------- */
 int main(int argc, char **argv) {
    auto auto_path = string(argv[1]);
-   thr = (uint8_t)(Util::to_int(string(argv[2])));
-   dir = WORKING_DIR + std::to_string((IMM)thr) + string("/");
-   auto bin_path = string(dir + "obj");
+   auto binary_name = string(argv[2]);
+   auto thread_id = (uint8_t)(Util::to_int(string(argv[2])));
+   auto dir = WORKING_DIR + std::to_string((IMM)thread_id) + string("/");
+   auto binary_path = string(dir + binary_name);
 
    LOG_START(dir + "log.sba");
-   Framework::config(auto_path, thr);
+   Framework::config(auto_path, thread_id);
 
-   p = Framework::create_program(bin_path, {}, {});
+   p = Framework::create_program(binary_path, {}, {});
    if (p != nullptr) {
       p->load_binary();
       auto def_fptrs = p->definite_fptrs();
