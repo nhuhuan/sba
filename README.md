@@ -32,7 +32,7 @@ To analyze a binary object `~/obj`, use the following command:
 ```
 jump_table /tmp/x86.auto ~/obj
 ```
-By default, SBA creates temporary files and outputs result in `/tmp/sba/`. User can specify the paths using `-d` and `-o` as follows:
+By default, SBA creates temporary files and outputs result in `/tmp/sba/`. The paths can be specifed using `-d` and `-o` as follows:
 ```
 ./jump_table -d /tmp/sba/ -o /tmp/sba/result /tmp/x86.auto ~/obj
 ```
