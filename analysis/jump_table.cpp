@@ -61,7 +61,7 @@ void setup(int argc, char **argv) {
    if (argc < 3 || argc > 7)
       help();
 
-   for (int i = 0; i < 2; ++i) {
+   for (int i = 0; i < ((argc-3) >> 1); ++i) {
       auto s1 = std::string(argv[2*i+1]);
       auto s2 = std::string(argv[2*i+2]);
       if (s1.compare("-d") == 0)
