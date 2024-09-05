@@ -16,14 +16,14 @@ namespace SBA {
    #if ENABLE_SUPPORT_CONSTRAINT
       struct AbsId {
          enum class T: uint8_t {NONE, REG, MEM, BAD};
-         T sym_type;       /* sym + offset            */
-         ARCH::REG reg;    /*  |-- reg                */
-         IMM m_offset;     /*  |-- *(reg + m_offset)  */
-         IMM offset;       /*  |-- NONE               */
+         T sym_type;               /* sym + offset            */
+         SYSTEM::Reg reg;    /*  |-- reg                */
+         IMM m_offset;             /*  |-- *(reg + m_offset)  */
+         IMM offset;               /*  |-- NONE               */
          AbsId(): sym_type(T::BAD) {};
          AbsId(IMM c): sym_type(T::NONE), offset(c) {};
-         AbsId(ARCH::REG r, IMM c);
-         AbsId(ARCH::REG r, IMM m_c, IMM c);
+         AbsId(SYSTEM::Reg r, IMM c);
+         AbsId(SYSTEM::Reg r, IMM m_c, IMM c);
          bool bad() const {return sym_type == T::BAD;};
          bool const_expr() const {return sym_type == T::NONE;};
          bool mem_expr() const {return sym_type == T::MEM;};
@@ -70,7 +70,7 @@ namespace SBA {
          list<Group> cstrs;
          AbsCstr(): cstrs({}) {};
          AbsCstr(const AbsId& expr, const Range& r);
-         AbsCstr(const AbsFlags& flags, COMPARE cmp);
+         AbsCstr(const AbsFlags& FLAGS, COMPARE cmp);
          void add(const AbsCstr& object);       /* x.add(y) depends on mode */
          void intersect(const AbsCstr& object); /* x.intersect(y) = x & y   */
          void merge(const AbsCstr& object);     /* x.merge(y)     = x | y   */
@@ -88,7 +88,7 @@ namespace SBA {
          list<Group> cstrs;
          SimpleAbsCstr(): cstrs({}) {};
          SimpleAbsCstr(const AbsId& expr, const Range& r);
-         SimpleAbsCstr(const AbsFlags& flags, COMPARE cmp);
+         SimpleAbsCstr(const AbsFlags& FLAGS, COMPARE cmp);
          void intersect(const SimpleAbsCstr& object);
          void merge(const SimpleAbsCstr& object);
          void invalidate(const AbsId& expr);

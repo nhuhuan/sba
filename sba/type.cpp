@@ -54,7 +54,7 @@ string UnitId::to_string() const {
    string s = (sign_ == -1)? string("-"): string("");
    switch (r_) {
       case REGION::REGISTER:
-         s.append(ARCH::to_string((ARCH::REG)i_));
+         s.append(SYSTEM::to_string((SYSTEM::Reg)i_));
          break;
       case REGION::STACK:
          s.append(string("stack[").append(std::to_string(i_)).append("]"));

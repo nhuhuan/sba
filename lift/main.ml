@@ -558,19 +558,12 @@ let testXducer trainFile trainFile2 inXducerFile dotFile outXducerFile
 (******************************************************************************
                                   C Interface
 ******************************************************************************)
-let prepare_filename (thread:int) (session:int) (id:int): string =
-    "/tmp/sja/" ^ string_of_int(thread) ^ "/lift/" ^ string_of_int(session) ^ "/tmp_" ^ string_of_int(id)
+let c_load_automaton (file_auto:string) =
+  Learn.load_automata (open_in_bin file_auto)
 ;;
 
-let c_load_automaton (thread:int) (sessionId:int) =
-  let f = prepare_filename thread sessionId 1 in
-  (Learn.load_automata (open_in_bin f))
-;;
-
-let c_lift_asm (thread:int) (sessionId:int) =
-  let f1 = prepare_filename thread sessionId 2 in
-  let f2 = prepare_filename thread sessionId 3 in
-  (doLiftAsm [f1] f2)
+let c_lift_asm (file_asm:string) (file_rtl:string) =
+  doLiftAsm [file_asm] file_rtl
 ;;
 
 let () =

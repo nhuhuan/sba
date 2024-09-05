@@ -8,7 +8,7 @@
 #ifndef TYPE_H
 #define TYPE_H
 
-#include "arch.h"
+#include "system.h"
 #include "config.h"
 #include <array>
 
@@ -20,7 +20,7 @@ namespace SBA {
    enum class TRACK:   char {BEFORE, AFTER};
 
    constexpr IMM bound(REGION r, uint8_t side)
-      {return (IMM)((int)r==0? (side==0?                 1: ARCH::NUM_REG-1):
+      {return (IMM)((int)r==0? (side==0?                 1: SYSTEM::NUM_REG-1):
                    ((int)r==1? (side==0?  STACK_OFFSET_MIN: STACK_OFFSET_MAX):
                                (side==0? STATIC_OFFSET_MIN: STATIC_OFFSET_MAX)));}
    constexpr IMM size(REGION r) {return bound(r,1)-bound(r,0)+1;}
@@ -31,7 +31,7 @@ namespace SBA {
    /* -------------------------------------------------------- */
    class UnitId {
     public:
-      static std::array<UnitId,ARCH::NUM_REG+1>* REG;
+      static std::array<UnitId,SYSTEM::NUM_REG+1>* REG;
       static std::array<UnitId,size(REGION::STACK)+2>* STACK;
 
     private:
@@ -42,7 +42,7 @@ namespace SBA {
     public:
       UnitId(char sign, REGION r, IMM i) : sign_(sign), r_(r), i_(i) {};
       UnitId() : UnitId(0, REGION::SPECIAL, 0) {};
-      UnitId(ARCH::REG r) : UnitId(1, REGION::REGISTER, (IMM)r) {};
+      UnitId(SYSTEM::Reg r) : UnitId(1, REGION::REGISTER, (IMM)r) {};
       UnitId(REGION r, IMM i) : UnitId(1, r, i) {};
       UnitId(const UnitId& obj) : UnitId(obj.sign_, obj.r_, obj.i_) {};
 

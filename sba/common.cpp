@@ -13,8 +13,8 @@ using namespace SBA;
 fstream LOG_FILE;
 bool GLOBAL_DEBUG = false;
 Array<IMM,Block*,LIMIT_VISITED> Util::Visited;
-IMM SBA::stackSym = SBA::get_sym(ARCH::stack_ptr);
-IMM SBA::staticSym = SBA::get_sym(ARCH::insn_ptr);
+IMM SBA::stackSym = SBA::get_sym(SYSTEM::STACK_PTR);
+IMM SBA::staticSym = SBA::get_sym(SYSTEM::INSN_PTR);
 /* -------------------------------------------------------------------------- */
               /*   0   initReg[]   initStack[]   initStatic[]   */
 IMM SBA::get_sym(REGION r, IMM i) {
@@ -41,7 +41,7 @@ IMM SBA::get_sym(REGION r, IMM i) {
 }
 
 
-IMM SBA::get_sym(ARCH::REG r) {
+IMM SBA::get_sym(SYSTEM::Reg r) {
    return get_sym(REGION::REGISTER,(IMM)r);
 }
 
@@ -58,20 +58,20 @@ UnitId SBA::get_id(REGION r, IMM i) {
 }
 
 
-UnitId SBA::get_id(ARCH::REG r) {
+UnitId SBA::get_id(SYSTEM::Reg r) {
    return get_id(REGION::REGISTER,(IMM)r);
 }
 
 
 UnitId SBA::get_id(IMM sym) {
    if (sym == oo)
-      return get_id(ARCH::flags);
+      return get_id(SYSTEM::FLAGS);
    else if (sym == _oo)
       return get_id(REGION::SPECIAL,0);
    else if (sym == 0)
       return get_id(REGION::NONE,0);
    else if (sym < base(REGION::STACK))
-      return get_id((ARCH::REG)sym);
+      return get_id((SYSTEM::Reg)sym);
    else if (sym < base(REGION::STATIC)) {
       constexpr const IMM out = base(REGION::STACK) + size(REGION::STACK);
       return sym < out? get_id(REGION::STACK, sym - base(REGION::STACK)

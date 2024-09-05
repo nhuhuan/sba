@@ -12,8 +12,8 @@ using namespace SBA;
 /* ------------------------------- Constraint ------------------------------- */
 #if ENABLE_SUPPORT_CONSTRAINT
    /* ---------------------------------------------*/
-   AbsId::AbsId(ARCH::REG r, IMM c) {
-      if ((IMM)r < ARCH::NUM_CSTR_REG) {
+   AbsId::AbsId(SYSTEM::Reg r, IMM c) {
+      if ((IMM)r < SYSTEM::NUM_REG_CSTR) {
          sym_type = T::REG;
          reg = r;
          offset = c;
@@ -23,8 +23,8 @@ using namespace SBA;
    }
 
 
-   AbsId::AbsId(ARCH::REG r, IMM m_c, IMM c) {
-      if ((IMM)r < ARCH::NUM_CSTR_REG) {
+   AbsId::AbsId(SYSTEM::Reg r, IMM m_c, IMM c) {
+      if ((IMM)r < SYSTEM::NUM_REG_CSTR) {
          sym_type = T::MEM;
          reg = r;
          m_offset = m_c;
@@ -85,16 +85,16 @@ using namespace SBA;
             s = std::to_string(offset);
             break;
          case T::REG:
-            s += ARCH::to_string(reg);
+            s += SYSTEM::to_string(reg);
             if (offset != 0)
                s += " + " + std::to_string(offset);
             break;
          case T::MEM:
             s += "*";
-            if (reg == ARCH::REG::UNKNOWN) s += std::to_string(m_offset);
+            if (reg == SYSTEM::Reg::UNKNOWN) s += std::to_string(m_offset);
             else {
-               if (m_offset == 0) s += ARCH::to_string(reg);
-               else s += "(" + ARCH::to_string(reg) + " + "
+               if (m_offset == 0) s += SYSTEM::to_string(reg);
+               else s += "(" + SYSTEM::to_string(reg) + " + "
                              + std::to_string(m_offset) + ")";
             }
             if (offset != 0)
@@ -164,8 +164,8 @@ using namespace SBA;
 
 
    void AbsFlags::assign(const AbsId& dst, const AbsId& src) {
-      /* flags = (x_old, 4); x_new = x_old + 3 --> flags = (x_new - 3, 4) */
-      /* flags = (4, x_old); x_new = x_old + 3 --> flags = (4, x_new - 3) */
+      /* FLAGS = (x_old, 4); x_new = x_old + 3 --> FLAGS = (x_new - 3, 4) */
+      /* FLAGS = (4, x_old); x_new = x_old + 3 --> FLAGS = (4, x_new - 3) */
       if (dst.equal_sym(src)) {
          for (auto& p: pairs)
             if (p.lhs.equal_sym(dst))
@@ -200,8 +200,8 @@ using namespace SBA;
    }
 
 
-   AbsCstr::AbsCstr(const AbsFlags& flags, COMPARE cmp) {
-      for (auto const& p: flags.pairs)
+   AbsCstr::AbsCstr(const AbsFlags& FLAGS, COMPARE cmp) {
+      for (auto const& p: FLAGS.pairs)
          /* ax + 4 <= 3 --> ax in ([-oo, 3] - [4, 4]) --> ax in [-oo, -1] */
          if (!p.lhs.const_expr() && p.rhs.const_expr()) {
             auto expr = p.lhs;  expr.offset = 0;
@@ -481,8 +481,8 @@ using namespace SBA;
    }
 
 
-   SimpleAbsCstr::SimpleAbsCstr(const AbsFlags& flags, COMPARE cmp) {
-      for (auto const& p: flags.pairs)
+   SimpleAbsCstr::SimpleAbsCstr(const AbsFlags& FLAGS, COMPARE cmp) {
+      for (auto const& p: FLAGS.pairs)
          /* ax + 4 <= 3 --> ax in ([-oo, 3] - [4, 4]) --> ax in [-oo, -1] */
          if (!p.lhs.const_expr() && p.rhs.const_expr()) {
             auto expr = p.lhs;  expr.offset = 0;

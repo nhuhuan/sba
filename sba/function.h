@@ -52,7 +52,7 @@ namespace SBA {
       const vector<SCC*>& scc_list() const {return s_list_;};
 
       /* analysis */
-      void analyse(const State::StateConfig& conf);
+      void analyze(const State::StateConfig& conf);
       vector<AbsVal> track(TRACK trackType, const UnitId& id, const Loc& loc,
                            const vector<Insn*>& insns);
       void resolve_icf();
@@ -61,7 +61,7 @@ namespace SBA {
       void summary();
 
       /* pattern matching */
-      vector<ExprLoc> find_def(ARCH::REG reg, const Loc& loc) const;
+      vector<ExprLoc> find_def(SYSTEM::Reg reg, const Loc& loc) const;
       template<class RetType,class ExprType>
             vector<RetType> find_pattern(const ExprLoc& X,
             vector<RetType>(*recur)(const ExprLoc&),

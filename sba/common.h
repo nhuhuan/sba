@@ -130,10 +130,10 @@ namespace SBA {
    extern IMM stackSym;
    extern IMM staticSym;
    extern IMM get_sym(REGION r, IMM i);
-   extern IMM get_sym(ARCH::REG r);
+   extern IMM get_sym(SYSTEM::Reg r);
    extern IMM get_sym(const UnitId& id);
    extern UnitId get_id(REGION r, IMM i);
-   extern UnitId get_id(ARCH::REG r);
+   extern UnitId get_id(SYSTEM::Reg r);
    extern UnitId get_id(IMM sym);
    template class Array<IMM,Block*,LIMIT_VISITED>;
    template class Array<uint8_t,IMM,LIMIT_REFRESH>;

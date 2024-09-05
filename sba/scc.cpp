@@ -76,7 +76,7 @@ void SCC::execute(State& s) const {
          #if DLEVEL >= 3
             for (IMM i=bound(REGION::REGISTER,0); i<=bound(REGION::REGISTER,1); ++i)
                if ((mask >> i) & 1)
-                  LOG3("preset " << get_id((ARCH::REG)i).to_string());
+                  LOG3("preset " << get_id((SYSTEM::Reg)i).to_string());
          #endif
          /* execute */
          for (auto b: b_list_)

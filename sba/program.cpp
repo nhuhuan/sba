@@ -16,36 +16,36 @@
 
 using namespace SBA;
 /* -------------------------------- Program --------------------------------- */
-Program::Program(const vector<tuple<IMM,RTL*,vector<uint8_t>>>& offset_rtl_raw,
-const vector<IMM>& fptr_list, const unordered_map<IMM,unordered_set<IMM>>& icfs,
-const string& bin_path, bool total_cfg): faulty(false),
+Program::Program(const string& f_obj, const
+vector<tuple<IMM,RTL*,vector<uint8_t>>>& offset_rtl_raw, const
+vector<IMM>& fptr_list, const unordered_map<IMM,unordered_set<IMM>>& indirect_targets):
+faulty(false),
 #if ENABLE_DETECT_UPDATED_FUNCTION
    update_num(0),
 #endif
-icfs_(icfs), bin_path_(bin_path) {
-   TIME_START(start_t);
-   info_.valid_insns = &i_map_;
+icfs_(indirect_targets), f_obj_(f_obj) {
+
+   SYSTEM::load(info_, f_obj_);
+   info_.insns = &i_map_;
+
    sorted_insns_.reserve(offset_rtl_raw.size());
    for (auto [offset, rtl, raw]: offset_rtl_raw) {
       auto insn = new Insn(offset, rtl, raw);
       i_map_[offset] = insn;
       sorted_insns_.push_back(insn);
    }
-   if (total_cfg) {
-      for (auto [jump_loc, expr]: icfs)
+
+   for (auto [jump_loc, expr]: indirect_targets)
       if (i_map_.contains(jump_loc))
          recent_icfs_.push_back(jump_loc);
-      fptrs(fptr_list);
-      if (!fptr_list.empty())
-         update();
-   }
-   TIME_STOP(Framework::t_cfg, start_t);
+
+   fptrs(fptr_list);
+   if (!fptr_list.empty())
+      update();
 }
 
 
 Program::~Program() {
-   for (auto [fptr, f]: f_map_)
-      delete f;
    for (auto [offset, b]: b_map_)
       delete b;
    for (auto [offset, i]: i_map_)
@@ -55,11 +55,8 @@ Program::~Program() {
 
 void Program::build_func(IMM entry, const unordered_map<IMM,unordered_set<IMM>>& icfs,
 const vector<IMM>& norets) {
-   for (auto [fptr, f]: f_map_)
-      delete f;
    for (auto [offset, b]: b_map_)
       delete b;
-   f_map_.clear();
    b_map_.clear();
    recent_fptrs_ = vector<IMM>{entry};
    icfs_ = icfs;
@@ -144,7 +141,7 @@ void Program::block_dfs(Insn* i) {
                      return;
                   #elif ENABLE_COMPATIBLE_INPUT
                      if (i->call()) {
-                        i->replace(new Exit(Exit::EXIT_TYPE::HALT), ARCH::raw_bytes_hlt);
+                        i->replace(new Exit(Exit::EXIT_TYPE::HALT), SYSTEM::HLT_BYTES);
                         LOG2("fix: mark " << i->offset() << " as a halt instruction");
                         b_curr->faulty = false;
                         b_curr->shrink_succ();
@@ -222,7 +219,7 @@ void Program::block_dfs(Insn* i) {
                b_map_[b_curr->offset()] = b_curr;
                #if ENABLE_COMPATIBLE_INPUT
                   auto object = new Exit(Exit::EXIT_TYPE::HALT);
-                  i->replace(object, ARCH::raw_bytes_hlt);
+                  i->replace(object, SYSTEM::HLT_BYTES);
                   LOG2("fix: mark " << i->offset() << " as a halt instruction");
                   b_curr->shrink_succ();
                #else
@@ -238,26 +235,13 @@ void Program::block_dfs(Insn* i) {
 /* -------------------------------------------------------------------------- */
 Function* Program::func(IMM fptr) {
    checked_fptrs_.insert(fptr);
-   auto it_f = f_map_.find(fptr);
-   if (it_f != f_map_.end())
-      return it_f->second;
-   else {
-      auto it_b = b_map_.find(fptr);
-      TIME_START(start_t);
-      ++Framework::num_func;
-      auto b = it_b->second;
-      auto f = new Function(this, b);
-      if (f->faulty) {
-         LOG2("function " << fptr << " is faulty!");
-         delete f;
-         f = nullptr;
-      }
-      // else
-      //    f_map_[fptr] = f;
-      TIME_STOP(Framework::t_cfg, start_t);
-      return f;
+   auto f = new Function(this, b_map_[fptr]);
+   if (f->faulty) {
+      LOG2("function " << fptr << " is faulty!");
+      delete f;
+      return nullptr;
    }
-   return nullptr;
+   return f;
 }
 
 
@@ -265,39 +249,33 @@ void Program::fptrs(const vector<IMM>& fptr_list) {
    recent_fptrs_ = fptr_list;
    fptrs_.insert(fptr_list.begin(), fptr_list.end());
    #if ENABLE_SUPPORT_CONSTRAINT
-      sorted_fptrs = vector<IMM>(fptrs_.begin(), fptrs_.end());
-      std::sort(sorted_fptrs.begin(), sorted_fptrs.end());
+   sorted_fptrs = vector<IMM>(fptrs_.begin(), fptrs_.end());
+   std::sort(sorted_fptrs.begin(), sorted_fptrs.end());
    #endif
 }
 
 
 #if ENABLE_DETECT_UPDATED_FUNCTION
-   void Program::propagate_update(Block* b) {
-      b->update_num = update_num;
-      for (auto p: b->superset_preds)
-         if (p->update_num < update_num)
-            propagate_update(p);
-   }
+void Program::propagate_update(Block* b) {
+   b->update_num = update_num;
+   for (auto p: b->superset_preds)
+      if (p->update_num < update_num)
+         propagate_update(p);
+}
 #endif
 
 
 bool Program::updated(IMM fptr) {
    #if ENABLE_DETECT_UPDATED_FUNCTION
-      auto it = b_map_.find(fptr);
-      return (it != b_map_.end() && it->second->update_num == update_num);
+   auto it = b_map_.find(fptr);
+   return (it != b_map_.end() && it->second->update_num == update_num);
    #else
-      return true;
+   return true;
    #endif
 }
 
 
 void Program::update() {
-   TIME_START(start_t);
-
-   for (auto [fptr, f]: f_map_)
-      delete f;
-   f_map_.clear();
-
    /* update existing blocks with recent_icfs_ */
    for (auto jump_loc: recent_icfs_) {
       auto it = i_map_.find(jump_loc);
@@ -308,8 +286,8 @@ void Program::update() {
             if (b->faulty) {
                LOG4("error: missing indirect target " << t);
                #if ABORT_MISSING_INDIRECT_TARGET
-                  faulty = true;
-                  return;
+               faulty = true;
+               return;
                #endif
             }
          }
@@ -324,11 +302,11 @@ void Program::update() {
             block_dfs(it->second);
       }
       #if ABORT_MISSING_FUNCTION_ENTRY
-         else {
-            LOG4("error: missing function entry " << t);
-            faulty = true;
-            return;
-         }
+      else {
+         LOG4("error: missing function entry " << t);
+         faulty = true;
+         return;
+      }
       #endif
    }
 
@@ -336,20 +314,20 @@ void Program::update() {
    for (auto [transfer, target, cond]: split_)
       if (target != target->parent->first()) {
          #if DLEVEL >= 4
-            auto b1 = target->parent;
-            string s = string("split basic block [")
-                     + std::to_string(b1->first()->offset()) + string(" .. ")
-                     + std::to_string(b1->last()->offset()) + string("]");
+         auto b1 = target->parent;
+         string s = string("split basic block [")
+                  + std::to_string(b1->first()->offset()) + string(" .. ")
+                  + std::to_string(b1->last()->offset()) + string("]");
          #endif
          block_split(target);
          #if DLEVEL >= 4
-            auto b2 = target->parent;
-            s += string(" into [")
-               + std::to_string(b1->first()->offset()) + string(" .. ")
-               + std::to_string(b1->last()->offset()) + string("] and [")
-               + std::to_string(b2->first()->offset()) + string(" .. ")
-               + std::to_string(b2->last()->offset()) + string("]");
-            LOG4(s);
+         auto b2 = target->parent;
+         s += string(" into [")
+            + std::to_string(b1->first()->offset()) + string(" .. ")
+            + std::to_string(b1->last()->offset()) + string("] and [")
+            + std::to_string(b2->first()->offset()) + string(" .. ")
+            + std::to_string(b2->last()->offset()) + string("]");
+         LOG4(s);
          #endif
          transfer->parent->succ(target->parent, cond);
       }
@@ -357,24 +335,22 @@ void Program::update() {
 
    /* detect updated functions */
    #if ENABLE_DETECT_UPDATED_FUNCTION
-      ++update_num;
-      for (auto jump_loc: recent_icfs_) {
-         auto it = i_map_.find(jump_loc);
-         if (it != i_map_.end() && it->second->parent != nullptr)
-            propagate_update(it->second->parent);
+   ++update_num;
+   for (auto jump_loc: recent_icfs_) {
+      auto it = i_map_.find(jump_loc);
+      if (it != i_map_.end() && it->second->parent != nullptr)
+         propagate_update(it->second->parent);
+   }
+   for (auto jump_loc: recent_fptrs_) {
+      auto it = i_map_.find(jump_loc);
+      if (it != i_map_.end() && it->second->parent != nullptr) {
+         it->second->parent->update_num = update_num;
+         it->second->parent->superset_preds.clear();
       }
-      for (auto jump_loc: recent_fptrs_) {
-         auto it = i_map_.find(jump_loc);
-         if (it != i_map_.end() && it->second->parent != nullptr) {
-            it->second->parent->update_num = update_num;
-            it->second->parent->superset_preds.clear();
-         }
-      }
+   }
    #endif
    recent_icfs_.clear();
    recent_fptrs_.clear();
-
-   TIME_STOP(Framework::t_cfg, start_t);
 }
 /* -------------------------------------------------------------------------- */
 void Program::icf(IMM jump_loc, const unordered_set<IMM>& targets) {
@@ -391,119 +367,114 @@ void Program::icf(IMM jump_loc, const unordered_set<IMM>& targets) {
 
 
 #if ENABLE_RESOLVE_ICF
-   bool Program::valid_icf(IMM target, Function* func) const {
-      if (valid_icf(target)) {
-         for (auto [l,r]: func->code_range)
-            if (l <= target && target < r)
-               return true;
-      }
-      return false;
+bool Program::valid_icf(IMM target, Function* func) const {
+   if (valid_icf(target)) {
+      for (auto [l,r]: func->code_range)
+         if (l <= target && target < r)
+            return true;
    }
-
-
-   void Program::resolve_unbounded_icf() {
-      for (auto const& [jump_loc, jtables]: unbounded_icf_jtables) {
-         unordered_set<IMM> targets;
-         /* (1) jtable_targets */
-         for (auto jtable: jtables) {
-            auto it = jtable_targets.find(jtable);
-            if (it != jtable_targets.end())
-               targets.insert(it->second.begin(), it->second.end());
-         }
-         /* (2) unbounded_icf_targets */
-         auto it = unbounded_icf_targets.find(jump_loc);
-         if (targets.empty() && it != unbounded_icf_targets.end())
-            targets = it->second;
-
-         icf(jump_loc, targets);
-         LOG2("found " << targets.size() << " indirect targets at " << jump_loc);
-         string s = "";
-         for (auto t: targets)
-            s.append(std::to_string(t)).append(" ");
-         LOG3(s);
-      }
-
-      unbounded_icf_jtables.clear();
-      unbounded_icf_targets.clear();
-   }
-
-
-   void Program::resolve_icf(
-   unordered_map<IMM,unordered_set<IMM>>& bounded_targets,
-   unordered_map<IMM,unordered_set<IMM>>& unbounded_targets,
-   Function* func, BaseStride* expr, const function<int64_t(int64_t)>& f) {
-      for (BaseStride* X = expr; X != nullptr; X = X->next_value())
-      if (!X->top() || !X->dynamic()) {
-         auto b = (int64_t)X->base();
-         auto s = (int64_t)X->stride();
-         auto w = X->width();
-         auto x = X->index();
-         if (s == 0) {
-            auto t = (X->nmem())?
-                     f(b): f(Util::cast_int(read_value(b, w), w));
-            if (valid_icf(t)) {
-               unbounded_targets[-1].insert(t);
-               LOG4("#0: " << t);
-            }
-         }
-         else if (x->top() || x->dynamic()) {
-            #if ENABLE_SUPPORT_CONSTRAINT
-               if (!x->bounds().full() && !x->bounds().empty() &&
-               0 < x->bounds().hi() && x->bounds().hi() < LIMIT_JTABLE) {
-                  for (auto addr = b;
-                            addr <= b + x->bounds().hi() * s; addr += s) {
-                     auto t = (X->nmem())?
-                              f(addr): f(Util::cast_int(read_value(addr, w), w));
-                     if (valid_icf(t)) {
-                        LOG4("#" << (addr-b)/s << ": " << t);
-                        bounded_targets[b].insert(t);
-                     }
-                  }
-               }
-               else
-            #endif
-            {
-               for (auto addr = b; addr < b + LIMIT_JTABLE; addr += s) {
-                  auto t = (X->nmem())?
-                           f(addr): f(Util::cast_int(read_value(addr, w), w));
-                  if (valid_icf(t)) {
-                     LOG4("#" << (addr-b)/s << ": " << t);
-                     unbounded_targets[b].insert(t);
-                  }
-                  else
-                     break;
-               }
-            }
-         }
-         else {
-            if (X->nmem(), func) {
-               resolve_icf(bounded_targets, unbounded_targets, func, x,
-               [&](int64_t x_val)->int64_t {
-                  return f(b + s * x_val);
-               });
-            }
-            else
-               resolve_icf(bounded_targets, unbounded_targets, func, x,
-               [&](int64_t x_val)->int64_t {
-                  return f(Util::cast_int(read_value(b + s*x_val, w), w));
-               });
-         }
-      }
-   }
-#endif
-/* -------------------------------------------------------------------------- */
-void Program::load_binary() {
-   BINARY::load_binary(bin_path_,info_);
+   return false;
 }
 
 
-uint64_t Program::read_value(int64_t offset, uint8_t width) const {
-   return BINARY::read_value(info_, offset, width);
+void Program::resolve_unbounded_icf() {
+   for (auto const& [jump_loc, jtables]: unbounded_icf_jtables) {
+      unordered_set<IMM> targets;
+      /* (1) jtable_targets */
+      for (auto jtable: jtables) {
+         auto it = jtable_targets.find(jtable);
+         if (it != jtable_targets.end())
+            targets.insert(it->second.begin(), it->second.end());
+      }
+      /* (2) unbounded_icf_targets */
+      auto it = unbounded_icf_targets.find(jump_loc);
+      if (targets.empty() && it != unbounded_icf_targets.end())
+         targets = it->second;
+
+      icf(jump_loc, targets);
+      LOG2("found " << targets.size() << " indirect targets at " << jump_loc);
+      string s = "";
+      for (auto t: targets)
+         s.append(std::to_string(t)).append(" ");
+      LOG3(s);
+   }
+
+   unbounded_icf_jtables.clear();
+   unbounded_icf_targets.clear();
+}
+
+
+void Program::resolve_icf(
+unordered_map<IMM,unordered_set<IMM>>& bounded_targets,
+unordered_map<IMM,unordered_set<IMM>>& unbounded_targets,
+Function* func, BaseStride* expr, const function<int64_t(int64_t)>& f) {
+   for (BaseStride* X = expr; X != nullptr; X = X->next_value())
+   if (!X->top() || !X->dynamic()) {
+      auto b = (int64_t)X->base();
+      auto s = (int64_t)X->stride();
+      auto w = X->width();
+      auto x = X->index();
+      if (s == 0) {
+         auto t = (X->nmem())?
+                  f(b): f(Util::cast_int(read(b, w), w));
+         if (valid_icf(t)) {
+            unbounded_targets[-1].insert(t);
+            LOG4("#0: " << t);
+         }
+      }
+      else if (x->top() || x->dynamic()) {
+         #if ENABLE_SUPPORT_CONSTRAINT
+         if (!x->bounds().full() && !x->bounds().empty() &&
+         0 < x->bounds().hi() && x->bounds().hi() < LIMIT_JTABLE) {
+            for (auto addr = b;
+                      addr <= b + x->bounds().hi() * s; addr += s) {
+               auto t = (X->nmem())?
+                        f(addr): f(Util::cast_int(read(addr, w), w));
+               if (valid_icf(t)) {
+                  LOG4("#" << (addr-b)/s << ": " << t);
+                  bounded_targets[b].insert(t);
+               }
+            }
+         }
+         else
+         #endif
+         {
+            for (auto addr = b; addr < b + LIMIT_JTABLE; addr += s) {
+               auto t = (X->nmem())?
+                        f(addr): f(Util::cast_int(read(addr, w), w));
+               if (valid_icf(t)) {
+                  LOG4("#" << (addr-b)/s << ": " << t);
+                  unbounded_targets[b].insert(t);
+               }
+               else
+                  break;
+            }
+         }
+      }
+      else {
+         if (X->nmem(), func) {
+            resolve_icf(bounded_targets, unbounded_targets, func, x,
+            [&](int64_t x_val)->int64_t {
+               return f(b + s * x_val);
+            });
+         }
+         else
+            resolve_icf(bounded_targets, unbounded_targets, func, x,
+            [&](int64_t x_val)->int64_t {
+               return f(Util::cast_int(read(b + s*x_val, w), w));
+            });
+      }
+   }
+}
+#endif
+/* -------------------------------------------------------------------------- */
+uint64_t Program::read(int64_t offset, uint8_t width) const {
+   return SYSTEM::read(info_, offset, width);
 }
 
 
 unordered_set<IMM> Program::definite_fptrs() const {
-   return BINARY::definite_fptrs(info_, bin_path_);
+   return SYSTEM::definite_fptrs(info_, f_obj_);
 }
 
 
@@ -511,11 +482,11 @@ unordered_set<IMM> Program::prolog_fptrs() const {
    unordered_set<IMM> res;
    for (auto it = sorted_insns_.begin(); it != sorted_insns_.end(); ++it) {
       auto it2 = it;
-      if (ARCH::prolog_insn((*it)->raw_bytes()) >= 2) {
+      if (SYSTEM::prolog((*it)->raw_bytes()) >= 2) {
          for (uint8_t i = 0; i < 20; ++i) {
             ++it2;
             if (it2 != sorted_insns_.end()) {
-               if (ARCH::prolog_insn((*it2)->raw_bytes()) >= 1)
+               if (SYSTEM::prolog((*it2)->raw_bytes()) >= 1)
                   res.insert((*it)->offset());
             }
             else
@@ -532,20 +503,20 @@ unordered_set<IMM> Program::prolog_fptrs() const {
 
 unordered_set<IMM> Program::scan_cptrs() const {
    /* stored cptrs */
-   auto res = BINARY::stored_cptrs(info_, 8);
-   auto cptrs4 = BINARY::stored_cptrs(info_, 4);
+   auto res = SYSTEM::stored_cptrs(info_, 8);
+   auto cptrs4 = SYSTEM::stored_cptrs(info_, 4);
    res.insert(cptrs4.begin(), cptrs4.end());
 
    /* pc-relative encoding */
    auto pc_rel = new Binary(Binary::OP::PLUS, Expr::EXPR_MODE::DI,
-                 new Reg(Expr::EXPR_MODE::DI, ARCH::insn_ptr), nullptr);
+                 new Reg(Expr::EXPR_MODE::DI, SYSTEM::INSN_PTR), nullptr);
    for (auto i: sorted_insns_)
       if (!i->empty()) {
          auto vec = i->stmt()->find(RTL::RTL_EQUAL::PARTIAL, pc_rel);
          if (!vec.empty()) {
             IF_RTL_TYPE(Const, ((Binary*)(vec.front()))->operand(1), c, {
                auto val = i->next_offset() + c->to_int();
-               if (BINARY::valid_cptr(info_, val))
+               if (SYSTEM::code_ptr(info_, val))
                   res.insert(val);
             }, {});
          }

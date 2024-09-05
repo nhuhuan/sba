@@ -15,7 +15,7 @@
 
 #define DEFAULT_EXECUTE_CALL(state)                                            \
    if (state.config.enable_callee_effect)                                      \
-      for (auto r: ARCH::return_value)                                         \
+      for (auto r: SYSTEM::return_value)                                 \
          state.clobber(get_id(r));
 
 

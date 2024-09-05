@@ -19,7 +19,7 @@ namespace SBA {
    class Insn;
    /* ----------------------------------------------------------------------- */
    using UnitVal  = pair<array<AbsVal,3>,Insn*>;
-   using FastVal  = array<UnitVal,ARCH::NUM_FAST_REG>;
+   using FastVal  = array<UnitVal,SYSTEM::NUM_REG_FAST>;
    using SlowVal  = unordered_map<IMM,UnitVal>;
    using BlockVal = pair<FastVal,SlowVal>;
    using UnitLoc  = vector<Insn*>;

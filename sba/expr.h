@@ -155,16 +155,16 @@ namespace SBA {
 
    class Reg: public Var {
     private:
-      ARCH::REG r_;
+      SYSTEM::Reg r_;
 
     public:
-      Reg(EXPR_MODE mode, ARCH::REG r): Var(VAR_TYPE::REG, mode),
+      Reg(EXPR_MODE mode, SYSTEM::Reg r): Var(VAR_TYPE::REG, mode),
                                         r_(r) {};
       Reg(EXPR_MODE mode, Expr* r);
       ~Reg() {};
 
       /* accessor */
-      ARCH::REG reg() const {return r_;};
+      SYSTEM::Reg reg() const {return r_;};
       string to_string() const override;
 
       /* analysis */

@@ -136,14 +136,14 @@ namespace SBA {
    /* ---------------------------- EXECUTE & EVAL --------------------------- */
    #define EXECUTE_CALL(state)                                                 \
            if (state.config.enable_callee_effect) {                            \
-              for (auto r: ARCH::return_value)                                 \
+              for (auto r: SYSTEM::return_value)                         \
                  state.update(get_id(r), AbsVal(BaseLH(BaseLH::T::TOP),        \
                                          BaseStride(BaseStride::T::DYNAMIC),   \
                                          Taint(Taint::T::TOP)));               \
                  vector<UnitId> args;                                          \
-                 for (auto reg: ARCH::call_args)                               \
+                 for (auto reg: SYSTEM::call_args)                       \
                     args.push_back(get_id(reg));                               \
-                 auto sp = state.value(get_id(ARCH::stack_ptr));               \
+                 auto sp = state.value(get_id(SYSTEM::STACK_PTR));       \
                  auto const& sp_baselh = ABSVAL(BaseLH, sp);                   \
                  if (!sp_baselh.top() && !sp_baselh.bot() && !sp_baselh.notlocal() \
                   && sp_baselh.base() == stackSym) {                           \
@@ -170,7 +170,7 @@ namespace SBA {
                                            Taint(Taint::T::TOP)));             \
                  }                                                             \
            }                                                                   \
-           for (auto r: ARCH::return_value) {                                  \
+           for (auto r: SYSTEM::return_value) {                          \
               CLOBBER_REG(r, state.loc.block);                                 \
            }                                                                   \
            /* handle indirect calls */                                         \
@@ -189,11 +189,11 @@ namespace SBA {
            IF_RTL_TYPE(Reg, destination, reg, {                                \
               auto aval_s = source->eval(state);                               \
               aval_s.mode(size_d);                                             \
-              if (reg->reg() != ARCH::flags) {                                 \
+              if (reg->reg() != SYSTEM::FLAGS) {                         \
                  state.update(get_id(reg->reg()), aval_s);                     \
                  UPDATE_VALUE(reg, source, state);                             \
               }                                                                \
-              if (ARCH::critical(reg->reg())) {                                \
+              if (reg->reg() == SYSTEM::STACK_PTR) {                     \
                  CHECK_UNINIT(state, aval_s, size_d, 0x4);                     \
               }                                                                \
            }, {                                                                \
@@ -259,7 +259,7 @@ namespace SBA {
                   BaseStride(i_), Taint(0));
    #define EVAL_REGISTER(state)                                                \
            AbsVal res;                                                         \
-           if (r_ == ARCH::insn_ptr) {                                         \
+           if (r_ == SYSTEM::INSN_PTR) {                                 \
               auto pc = state.loc.insn->next_offset();                         \
               res = AbsVal(BaseLH(staticSym, Range(pc,pc)),                    \
                            BaseStride(pc),                                     \

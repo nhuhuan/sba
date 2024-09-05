@@ -8,7 +8,7 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include "binary.h"
+#include "system.h"
 #include "common.h"
 
 namespace SBA {
@@ -42,19 +42,18 @@ namespace SBA {
       vector<tuple<Insn*,Insn*,COMPARE>> split_;
 
     private:
-      string bin_path_;
-      BINARY::Info info_;
+      string f_obj_;
+      SYSTEM::Object info_;
 
     private:
       vector<Insn*> sorted_insns_;
       unordered_set<IMM> checked_fptrs_;
 
     public:
-      Program(const vector<tuple<IMM,RTL*,vector<uint8_t>>>& offset_rtl_raw,
-              const vector<IMM>& fptr_list,
-              const unordered_map<IMM,unordered_set<IMM>>& icfs,
-              const string& bin_path,
-              bool total_cfg = true);
+      Program(const string& f_obj,
+              const vector<tuple<IMM,RTL*,vector<uint8_t>>>& offset_rtl_raw,
+              const vector<IMM>& fptrs,
+              const unordered_map<IMM,unordered_set<IMM>>& indirect_targets);
       ~Program();
       void build_func(IMM entry, const unordered_map<IMM,unordered_set<IMM>>& icfs,
                       const vector<IMM>& norets);
@@ -88,8 +87,7 @@ namespace SBA {
       #endif
 
       /* binary */
-      void load_binary();
-      uint64_t read_value(int64_t offset, uint8_t width) const;
+      uint64_t read(int64_t offset, uint8_t width) const;
       unordered_set<IMM> definite_fptrs() const;
       unordered_set<IMM> prolog_fptrs() const;
       unordered_set<IMM> scan_cptrs() const;

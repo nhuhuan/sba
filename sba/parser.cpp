@@ -226,7 +226,7 @@ static RTL* process_rtl(const string& s) {
          }
          else {
             auto s = elem[0]->to_string();
-            if (ARCH::to_reg(s) == ARCH::REG::UNKNOWN) {
+            if (SYSTEM::to_reg(s) == SYSTEM::Reg::UNKNOWN) {
                delete_elem(elem);
                return nullptr;
             }

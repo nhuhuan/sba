@@ -125,7 +125,7 @@ void Function::build_cfg() {
    pseudo_entry_->succ(entry_,COMPARE::NONE,false);
    entry_->pred(pseudo_entry_);
 
-   pseudo_exit_ = new Block(vector<Insn*>{new Insn(oo, new Exit(Exit::EXIT_TYPE::HALT), ARCH::raw_bytes_hlt)});
+   pseudo_exit_ = new Block(vector<Insn*>{new Insn(oo, new Exit(Exit::EXIT_TYPE::HALT), SYSTEM::HLT_BYTES)});
    for (auto scc: s_list_)
    for (auto b: scc->block_list())
       if (b->succ().empty())
@@ -158,24 +158,19 @@ void Function::build_cfg() {
 }
 
 
-void Function::analyse(const State::StateConfig& conf) {
+void Function::analyze(const State::StateConfig& conf) {
    LOG3("############# analyzing ##############");
-   TIME_START(start_t);
-
    CUSTOM_ANALYSIS_CLEAR();
    s_ = State(this, conf);
    s_.loc.func = this;
    for (auto scc: s_list_)
       scc->execute(s_);
-
-   TIME_STOP(Framework::t_analyse, start_t);
 }
 
 
 vector<AbsVal> Function::track(TRACK trackType, const UnitId& id,
 const Loc& loc, const vector<Insn*>& insns) {
    LOG3("############## track " << id.to_string() << " ##############");
-   TIME_START(start_t);
 
    /* init CHANNEL::BLOCK */
    s_.loc = loc;
@@ -202,13 +197,11 @@ const Loc& loc, const vector<Insn*>& insns) {
 
    /* clear CHANNEL::BLOCK */
    s_.clear_track();
-
-   TIME_STOP(Framework::t_track, start_t);
    return res;
 }
 
 
-vector<ExprLoc> Function::find_def(ARCH::REG reg, const Loc& loc) const {
+vector<ExprLoc> Function::find_def(SYSTEM::Reg reg, const Loc& loc) const {
    vector<ExprLoc> res;
    auto pattern = new Reg(Expr::EXPR_MODE::DI, reg);
    for (auto l: s_.use_def(get_id(reg), loc)) {
@@ -298,8 +291,6 @@ void print_jtable(IMM loc, BaseStride* expr, Function* func) {
    }
 }
    void Function::resolve_icf() {
-      TIME_START(start_t);
-
       for (auto [jump_loc, expr]: target_expr)
       if (!container->icfs().contains(jump_loc)) {
          unordered_map<IMM,unordered_set<IMM>> bounded;
@@ -331,7 +322,5 @@ print_jtable(jump_loc,expr,this);
                       .insert(targets.begin(),targets.end());
          }
       }
-
-      TIME_STOP(Framework::t_target, start_t);
    }
 #endif

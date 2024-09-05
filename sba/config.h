@@ -10,8 +10,7 @@
 
 
 /* framework */
-#define ARCH               X86_64
-#define BINARY             ELF
+#define SYSTEM             ELF_x86
 #define ENDIAN             0   /* +---+-----------+ */
                                /* | 0 |   little  | */
                                /* | 1 |    big    | */
@@ -30,7 +29,6 @@
 #define IMM                int32_t
 #define  oo                ((IMM)100000000)
 #define _oo                ((IMM)-100000000)
-#define WORKING_DIR        "/tmp/sba/"
 
 
 /* state */
@@ -44,7 +42,6 @@
 
 /* optional */
 #define ENABLE_COMPATIBLE_INPUT           true
-#define ENABLE_LIFT_ENGINE                true
 #define ENABLE_RESOLVE_ICF                true
 #define ENABLE_DETECT_UNINIT              true
 #define ENABLE_SUPPORT_CONSTRAINT         true
@@ -63,12 +60,12 @@
 /* constraint */
 #if ENABLE_SUPPORT_CONSTRAINT
    #define UPDATE_VALUE(destination, source, state)                     \
-      auto& flags = state.loc.block->flags;                             \
+      auto& FLAGS = state.loc.block->FLAGS;                             \
       auto& cstr = state.loc.block->cstr;                               \
       auto dest_id = destination->expr_id(state);                       \
       if (!dest_id.bad()) {                                             \
          auto src_id = source->expr_id(state);                          \
-         flags.assign(dest_id, src_id);                                 \
+         FLAGS.assign(dest_id, src_id);                                 \
          /* dataflow bounds */                                          \
          auto bin = (Binary*)(*source);                                 \
          /* 0 <= eax & 15 <= 15      */                                 \
@@ -102,14 +99,14 @@
             else                                                        \
                cstr.assign(dest_id, src_id);                            \
          }                                                              \
-         LOG3("update(flags):\n      " << flags.to_string());           \
+         LOG3("update(FLAGS):\n      " << FLAGS.to_string());           \
          LOG3("update(cstr):\n      " << cstr.to_string());             \
       }
    #define CLOBBER_REG(r, block)                                        \
-      auto& flags = block->flags;                                       \
+      auto& FLAGS = block->FLAGS;                                       \
       auto& cstr = block->cstr;                                         \
       AbsId expr(r,0);                                                  \
-      flags.invalidate(expr);                                           \
+      FLAGS.invalidate(expr);                                           \
       cstr.invalidate(expr);
    #if ENABLE_RESOLVE_ICF
       #define INDEX_RANGE_CONCRETE(aval, r)                             \

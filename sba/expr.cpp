@@ -150,7 +150,7 @@ AbsVal Mem::eval(State& s) {
       if (addr_id_.reg_expr())
          expr_id_ = AbsId(addr_id_.reg, addr_id_.offset, 0);
       else if (addr_id_.const_expr())
-         expr_id_ = AbsId(ARCH::REG::UNKNOWN, addr_id_.offset, 0);
+         expr_id_ = AbsId(SYSTEM::Reg::UNKNOWN, addr_id_.offset, 0);
       return expr_id_;
    }
 #endif
@@ -161,14 +161,14 @@ bool Mem::contains(RTL* subExpr) const {
 }
 // ------------------------------------ Reg ------------------------------------
 Reg::Reg(EXPR_MODE mode, Expr* r): Var(VAR_TYPE::REG, mode) {
-   r_ = ARCH::to_reg(r->to_string());
+   r_ = SYSTEM::to_reg(r->to_string());
    delete r;
 }
 
 
 string Reg::to_string() const {
    return string("(reg").append(mode_string()).append(" ")
-                        .append(ARCH::to_string(r_)).append(")");
+                        .append(SYSTEM::to_string(r_)).append(")");
 }
 
 
@@ -216,8 +216,8 @@ AbsVal Reg::eval(State& s) {
       if (!run_expr_id_)
          return expr_id_;
       run_expr_id_ = false;
-      expr_id_ = (r_ == ARCH::insn_ptr)? AbsId(s.loc.insn->next_offset()):
-                                         AbsId(r_, 0);
+      expr_id_ = (r_ == SYSTEM::INSN_PTR)?
+                  AbsId(s.loc.insn->next_offset()): AbsId(r_, 0);
       return expr_id_;
    }
 #endif

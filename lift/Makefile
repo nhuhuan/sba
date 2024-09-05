@@ -66,10 +66,10 @@ learn: learn.cmi ${FMT_PARSER}.cmi lexAsm.cmo ${FMT_PARSER}.cmo parseRtl.cmi lex
 
 main.cmx: main.ml learn.ml learn.mli
 
-lift_x86: learn.cmi ${FMT_PARSER}.cmi lexAsm.cmx ${FMT_PARSER}.cmx parseRtl.cmi lexRtl.cmx parseRtl.cmx learn.cmx
-	$(CAMLOPTC) -output-obj -o lift_x86.o str.cmxa learn.cmx lexAsm.cmx ${FMT_PARSER}.cmx lexRtl.cmx parseRtl.cmx main.ml
+lift: learn.cmi ${FMT_PARSER}.cmi lexAsm.cmx ${FMT_PARSER}.cmx parseRtl.cmi lexRtl.cmx parseRtl.cmx learn.cmx
+	$(CAMLOPTC) -output-obj -o lift.o str.cmxa learn.cmx lexAsm.cmx ${FMT_PARSER}.cmx lexRtl.cmx parseRtl.cmx main.ml
 
-all: lift_x86 learnopt
+all: lift learnopt
 
 .PHONY: check
 check:

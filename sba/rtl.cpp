@@ -205,7 +205,7 @@ vector<RTL*> Parallel::find(RTL_EQUAL eq, RTL* v) {
 void Parallel::execute(State& s) {
    #if ENABLE_SUPPORT_CONSTRAINT == true
       for (auto stmt: stmts_)
-         stmt->assign_flags(s);
+         stmt->assign_FLAGS(s);
    #endif
    for (auto stmt: stmts_)
       stmt->execute(s);
@@ -382,23 +382,23 @@ vector<RTL*> Assign::find(RTL_EQUAL eq, RTL* v) {
 void Assign::execute(State& s) {
    EXECUTE_ASSIGN(s);
    #if ENABLE_SUPPORT_CONSTRAINT == true
-      if (run_assign_flags_)
-         assign_flags(s);
+      if (run_assign_FLAGS_)
+         assign_FLAGS(s);
    #endif
 }
 
 
 #if ENABLE_SUPPORT_CONSTRAINT == true
-   void Assign::assign_flags(const State& s) {
+   void Assign::assign_FLAGS(const State& s) {
       IF_RTL_TYPE(Reg, dst()->simplify(), reg, {
-         if (reg->reg() == ARCH::flags) {
-            auto& flags = s.loc.block->flags;
+         if (reg->reg() == SYSTEM::FLAGS) {
+            auto& FLAGS = s.loc.block->FLAGS;
             auto bin = (Binary*)(*src()->simplify());
-            flags = (bin != nullptr)? AbsFlags(bin->expr_pair(s)): AbsFlags();
-            LOG3("update(flags):\n      " << flags.to_string());
+            FLAGS = (bin != nullptr)? AbsFlags(bin->expr_pair(s)): AbsFlags();
+            LOG3("update(FLAGS):\n      " << FLAGS.to_string());
          }
       }, {});
-      run_assign_flags_ = false;
+      run_assign_FLAGS_ = false;
    }
 #endif
 
@@ -529,19 +529,19 @@ vector<RTL*> Clobber::find(RTL_EQUAL eq, RTL* v) {
 
 void Clobber::execute(State& s) {
    IF_RTL_TYPE(Reg, expr_, reg, {
-      if (reg->reg() != ARCH::flags)
+      if (reg->reg() != SYSTEM::FLAGS)
          s.clobber(get_id(reg->reg()));
    }, {});
 }
 
 
 #if ENABLE_SUPPORT_CONSTRAINT == true
-void Clobber::assign_flags(const State& s) {
+void Clobber::assign_FLAGS(const State& s) {
    IF_RTL_TYPE(Reg, expr_, reg, {
-      if (reg->reg() == ARCH::flags) {
-         auto& flags = s.loc.block->flags;
-         flags.clear();
-         LOG3("update(flags):\n      " << flags.to_string());
+      if (reg->reg() == SYSTEM::FLAGS) {
+         auto& FLAGS = s.loc.block->FLAGS;
+         FLAGS.clear();
+         LOG3("update(FLAGS):\n      " << FLAGS.to_string());
       }
    }, {});
 }

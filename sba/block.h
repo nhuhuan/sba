@@ -27,7 +27,7 @@ namespace SBA {
          vector<Block*> superset_preds;
       #endif
       #if ENABLE_SUPPORT_CONSTRAINT == true
-         AbsFlags flags;
+         AbsFlags FLAGS;
          DOMAIN_BOUNDS cstr;
       #endif
 

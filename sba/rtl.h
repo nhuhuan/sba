@@ -109,7 +109,7 @@ namespace SBA {
       virtual ~Statement() {};
       STATEMENT_TYPE stmt_type() const {return typeStmt_;};
       #if ENABLE_SUPPORT_CONSTRAINT == true
-         virtual void assign_flags(const State& s) {};
+         virtual void assign_FLAGS(const State& s) {};
       #endif
    };
    /* ------------------------------ Parallel ------------------------------- */
@@ -168,7 +168,7 @@ namespace SBA {
       Expr* dst_;
       Expr* src_;
       #if ENABLE_SUPPORT_CONSTRAINT == true
-         bool run_assign_flags_ = true;
+         bool run_assign_FLAGS_ = true;
       #endif
 
     public:
@@ -184,7 +184,7 @@ namespace SBA {
       /* analysis */
       void execute(State& s) override;
       #if ENABLE_SUPPORT_CONSTRAINT == true
-         void assign_flags(const State& s);
+         void assign_FLAGS(const State& s);
       #endif
 
       /* helper */
@@ -237,7 +237,7 @@ namespace SBA {
       /* analysis */
       void execute(State& s) override;
       #if ENABLE_SUPPORT_CONSTRAINT == true
-         void assign_flags(const State& s);
+         void assign_FLAGS(const State& s);
       #endif
 
       /* helper */
