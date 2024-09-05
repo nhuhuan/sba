@@ -28,12 +28,11 @@ cd lift && tar -xf dataset.tar.xz
 
 ## Usage
 ### Jump Table Analysis
-To analyze a binary object `~/obj`, use the following command.
+To analyze a binary object `~/obj`, use the following command
 ```
 jump_table /tmp/x86.auto ~/obj
 ```
-By default, SBA creates temporary files and outputs result in `/tmp/sba/`. If
-needed, user can specify the paths using `-d` and `-o` as follows.
+By default, SBA creates temporary files and outputs result in `/tmp/sba/`. User can specify the paths using `-d` and `-o` as follows
 ```
 ./jump_table -d /tmp/sba/ -o /tmp/sba/result /tmp/x86.auto ~/obj
 ```
