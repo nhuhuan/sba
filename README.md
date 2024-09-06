@@ -13,26 +13,21 @@
 ## Getting Started
 ### Dependencies:
 ```
-sudo apt-get install g++ ocaml camlp4-extra camlp4
+sudo apt-get install g++ ocaml camlp4-extra camlp4 tar cmake make
 ```
 ### Build SBA
 ```
 mkdir build && cd build
 cmake .. && make -j4
 ```
-### Prepare
-```
-cd lift && tar -xf dataset.tar.xz
-./learnopt -tr dataset/x86_64.imap -m dataset/manual.imap -as /tmp/x86.auto
-```
 
-## Usage
+## Applications
 ### Jump Table Analysis
 To analyze a binary object `~/obj`, use the following command:
 ```
-jump_table /tmp/x86.auto ~/obj
+jump_table x86_64.auto ~/obj
 ```
-By default, SBA creates temporary files and outputs result in `/tmp/sba/`. The paths can be specifed using `-d` and `-o` as follows:
+By default, SBA creates temporary files and outputs result in `/tmp/sba/`. These paths can be specifed using `-d` and `-o` as follows:
 ```
-./jump_table -d /tmp/sba/ -o /tmp/sba/result /tmp/x86.auto ~/obj
+./jump_table -d /tmp/sba/ -o /tmp/sba/result x86_64.auto ~/obj
 ```
