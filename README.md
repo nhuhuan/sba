@@ -25,7 +25,7 @@ cmake .. && make -j4
 ### Jump Table Analysis
 To analyze a binary object `~/obj`, use the following command:
 ```
-jump_table x86_64.auto ~/obj
+./jump_table x86_64.auto ~/obj
 ```
 By default, SBA creates temporary files and outputs result in `/tmp/sba/`. These paths can be specifed using `-d` and `-o` as follows:
 ```
