@@ -164,8 +164,8 @@ using namespace SBA;
 
 
    void AbsFlags::assign(const AbsId& dst, const AbsId& src) {
-      /* FLAGS = (x_old, 4); x_new = x_old + 3 --> FLAGS = (x_new - 3, 4) */
-      /* FLAGS = (4, x_old); x_new = x_old + 3 --> FLAGS = (4, x_new - 3) */
+      /* flags = (x_old, 4); x_new = x_old + 3 --> flags = (x_new - 3, 4) */
+      /* flags = (4, x_old); x_new = x_old + 3 --> flags = (4, x_new - 3) */
       if (dst.equal_sym(src)) {
          for (auto& p: pairs)
             if (p.lhs.equal_sym(dst))
@@ -200,8 +200,8 @@ using namespace SBA;
    }
 
 
-   AbsCstr::AbsCstr(const AbsFlags& FLAGS, COMPARE cmp) {
-      for (auto const& p: FLAGS.pairs)
+   AbsCstr::AbsCstr(const AbsFlags& flags, COMPARE cmp) {
+      for (auto const& p: flags.pairs)
          /* ax + 4 <= 3 --> ax in ([-oo, 3] - [4, 4]) --> ax in [-oo, -1] */
          if (!p.lhs.const_expr() && p.rhs.const_expr()) {
             auto expr = p.lhs;  expr.offset = 0;
@@ -481,8 +481,8 @@ using namespace SBA;
    }
 
 
-   SimpleAbsCstr::SimpleAbsCstr(const AbsFlags& FLAGS, COMPARE cmp) {
-      for (auto const& p: FLAGS.pairs)
+   SimpleAbsCstr::SimpleAbsCstr(const AbsFlags& flags, COMPARE cmp) {
+      for (auto const& p: flags.pairs)
          /* ax + 4 <= 3 --> ax in ([-oo, 3] - [4, 4]) --> ax in [-oo, -1] */
          if (!p.lhs.const_expr() && p.rhs.const_expr()) {
             auto expr = p.lhs;  expr.offset = 0;

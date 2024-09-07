@@ -59,7 +59,7 @@ void Block::detach() {
    num = 0;
    pred_.clear();
    #if ENABLE_SUPPORT_CONSTRAINT == true
-      FLAGS = AbsFlags();
+      flags = AbsFlags();
       cstr = DOMAIN_BOUNDS();
    #endif
 }
@@ -77,7 +77,7 @@ void Block::execute(State& s) {
       LOG4(str + "}");
    #endif
    #if ENABLE_SUPPORT_CONSTRAINT == true
-      LOG3("value(FLAGS):\n      " << FLAGS.to_string());
+      LOG3("value(flags):\n      " << flags.to_string());
       LOG3("value(cstr):\n      " << cstr.to_string());
    #endif
    s.loc.block = (Block*)this;
@@ -87,16 +87,16 @@ void Block::execute(State& s) {
    s.commit_block();
 
    #if ENABLE_SUPPORT_CONSTRAINT == true
-      /* update FLAGS */
+      /* update flags */
       for (auto [u, c]: succ_)
-         u->FLAGS.merge(FLAGS);
+         u->flags.merge(flags);
       /* update constraints */
       if (last()->cond_jump()) {
          IF_RTL_TYPE(Reg, last()->cond_expr(), reg, {
-            /* cond_expr: FLAGS */
+            /* cond_expr: flags */
             for (auto [u, c]: succ_) {
                auto branch_cstr = cstr;
-               branch_cstr.intersect(DOMAIN_BOUNDS(FLAGS, c));
+               branch_cstr.intersect(DOMAIN_BOUNDS(flags, c));
                LOG3("branch_" << u->offset() << " = "
                                    << branch_cstr.to_string());
                u->cstr.merge(branch_cstr);
@@ -105,10 +105,10 @@ void Block::execute(State& s) {
          }, {
          /* cond_expr: embedded comparison */
          IF_RTL_TYPE(Binary, last()->cond_expr(), bin, {
-            auto cFLAGS = AbsFlags(bin->expr_pair(s));
+            auto cflags = AbsFlags(bin->expr_pair(s));
             for (auto [u, c]: succ_) {
                auto branch_cstr = cstr;
-               branch_cstr.intersect(DOMAIN_BOUNDS(cFLAGS, c));
+               branch_cstr.intersect(DOMAIN_BOUNDS(cflags, c));
                LOG3("branch_" << u->offset() << " = "
                                    << branch_cstr.to_string());
                u->cstr.merge(branch_cstr);

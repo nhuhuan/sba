@@ -60,12 +60,12 @@
 /* constraint */
 #if ENABLE_SUPPORT_CONSTRAINT
    #define UPDATE_VALUE(destination, source, state)                     \
-      auto& FLAGS = state.loc.block->FLAGS;                             \
+      auto& flags = state.loc.block->flags;                             \
       auto& cstr = state.loc.block->cstr;                               \
       auto dest_id = destination->expr_id(state);                       \
       if (!dest_id.bad()) {                                             \
          auto src_id = source->expr_id(state);                          \
-         FLAGS.assign(dest_id, src_id);                                 \
+         flags.assign(dest_id, src_id);                                 \
          /* dataflow bounds */                                          \
          auto bin = (Binary*)(*source);                                 \
          /* 0 <= eax & 15 <= 15      */                                 \
@@ -99,14 +99,14 @@
             else                                                        \
                cstr.assign(dest_id, src_id);                            \
          }                                                              \
-         LOG3("update(FLAGS):\n      " << FLAGS.to_string());           \
+         LOG3("update(flags):\n      " << flags.to_string());           \
          LOG3("update(cstr):\n      " << cstr.to_string());             \
       }
    #define CLOBBER_REG(r, block)                                        \
-      auto& FLAGS = block->FLAGS;                                       \
+      auto& flags = block->flags;                                       \
       auto& cstr = block->cstr;                                         \
       AbsId expr(r,0);                                                  \
-      FLAGS.invalidate(expr);                                           \
+      flags.invalidate(expr);                                           \
       cstr.invalidate(expr);
    #if ENABLE_RESOLVE_ICF
       #define INDEX_RANGE_CONCRETE(aval, r)                             \

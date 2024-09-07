@@ -70,7 +70,7 @@ namespace SBA {
          list<Group> cstrs;
          AbsCstr(): cstrs({}) {};
          AbsCstr(const AbsId& expr, const Range& r);
-         AbsCstr(const AbsFlags& FLAGS, COMPARE cmp);
+         AbsCstr(const AbsFlags& flags, COMPARE cmp);
          void add(const AbsCstr& object);       /* x.add(y) depends on mode */
          void intersect(const AbsCstr& object); /* x.intersect(y) = x & y   */
          void merge(const AbsCstr& object);     /* x.merge(y)     = x | y   */
@@ -88,7 +88,7 @@ namespace SBA {
          list<Group> cstrs;
          SimpleAbsCstr(): cstrs({}) {};
          SimpleAbsCstr(const AbsId& expr, const Range& r);
-         SimpleAbsCstr(const AbsFlags& FLAGS, COMPARE cmp);
+         SimpleAbsCstr(const AbsFlags& flags, COMPARE cmp);
          void intersect(const SimpleAbsCstr& object);
          void merge(const SimpleAbsCstr& object);
          void invalidate(const AbsId& expr);

@@ -205,7 +205,7 @@ vector<RTL*> Parallel::find(RTL_EQUAL eq, RTL* v) {
 void Parallel::execute(State& s) {
    #if ENABLE_SUPPORT_CONSTRAINT == true
       for (auto stmt: stmts_)
-         stmt->assign_FLAGS(s);
+         stmt->assign_flags(s);
    #endif
    for (auto stmt: stmts_)
       stmt->execute(s);
@@ -382,23 +382,23 @@ vector<RTL*> Assign::find(RTL_EQUAL eq, RTL* v) {
 void Assign::execute(State& s) {
    EXECUTE_ASSIGN(s);
    #if ENABLE_SUPPORT_CONSTRAINT == true
-      if (run_assign_FLAGS_)
-         assign_FLAGS(s);
+      if (run_assign_flags_)
+         assign_flags(s);
    #endif
 }
 
 
 #if ENABLE_SUPPORT_CONSTRAINT == true
-   void Assign::assign_FLAGS(const State& s) {
+   void Assign::assign_flags(const State& s) {
       IF_RTL_TYPE(Reg, dst()->simplify(), reg, {
          if (reg->reg() == SYSTEM::FLAGS) {
-            auto& FLAGS = s.loc.block->FLAGS;
+            auto& flags = s.loc.block->flags;
             auto bin = (Binary*)(*src()->simplify());
-            FLAGS = (bin != nullptr)? AbsFlags(bin->expr_pair(s)): AbsFlags();
-            LOG3("update(FLAGS):\n      " << FLAGS.to_string());
+            flags = (bin != nullptr)? AbsFlags(bin->expr_pair(s)): AbsFlags();
+            LOG3("update(flags):\n      " << flags.to_string());
          }
       }, {});
-      run_assign_FLAGS_ = false;
+      run_assign_flags_ = false;
    }
 #endif
 
@@ -536,12 +536,12 @@ void Clobber::execute(State& s) {
 
 
 #if ENABLE_SUPPORT_CONSTRAINT == true
-void Clobber::assign_FLAGS(const State& s) {
+void Clobber::assign_flags(const State& s) {
    IF_RTL_TYPE(Reg, expr_, reg, {
       if (reg->reg() == SYSTEM::FLAGS) {
-         auto& FLAGS = s.loc.block->FLAGS;
-         FLAGS.clear();
-         LOG3("update(FLAGS):\n      " << FLAGS.to_string());
+         auto& flags = s.loc.block->flags;
+         flags.clear();
+         LOG3("update(flags):\n      " << flags.to_string());
       }
    }, {});
 }
