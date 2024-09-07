@@ -31,3 +31,10 @@ By default, SBA creates temporary files and outputs result in `/tmp/sba/`. These
 ```
 ./jump_table -d /tmp/sba/ -o /tmp/sba/result x86_64.auto ~/obj
 ```
+
+## Publications
+SBA has contributed significantly to the implementation of the following works:
+1. Scalable, Sound, and Accurate Jump Table Analysis. ISSTA 2024.
+2. Accurate Disassembly of Complex Binaries Without Use of Compiler Metadata. ASPLOS 2023.
+3. SAFER: Efficient and Error-Tolerant Binary Instrumentation. USENIX 2023.
+4. Practical fine-grained binary code randomization. ACSAC 2020.
