@@ -11,7 +11,7 @@
     - Decouple analysis from architecture specifics
 
 ## Getting Started
-### Dependencies:
+### Dependencies
 ```
 sudo apt-get install g++ ocaml camlp4-extra camlp4 tar cmake make
 ```
