@@ -6,7 +6,7 @@
   * Highly configurable
     - An abstract interpretation based framework that allows user to define abstract domains and configure instruction evaluation.
   * Sound and precise reasoning about stack memory
-    - A stack memory model at byte-level granularity, and a sound and efficient approximation for imprecise updates on stack.
+    - A stack memory model at byte-level granularity, and sound and efficient approximations for imprecise updates on stack.
   * Architecture-neutral
     - Decouple analysis from architecture specifics
 
