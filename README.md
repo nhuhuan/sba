@@ -8,7 +8,7 @@
   * Sound and precise reasoning about stack memory
     - A stack memory model at byte-level granularity, and sound and efficient approximations for imprecise updates on stack.
   * Architecture-neutral
-    - Decouple analysis from architecture specifics
+    - Decouple analysis from architecture specifics by operating on top of an intermediate representation.
 
 ## Getting Started
 ### Dependencies
