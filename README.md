@@ -1,25 +1,22 @@
 # SBA: Scalable Binary Analysis Framework
 
 ## Announcements
-We are planning a major overhaul for the SBA framework, starting from June 2025:
-* Framework
-  - Superset disassembly:
-    - Leverage GNU libraries, e.g., `libopcodes`, `libbfd`, and `libsframe`
-    - Avoid performance cost of assembly syntax conversion
-  - Framework API
-    - Improve ControlFlowGraphAPI
-    - Improve AnalysisAPI
-  - Scalability
-    - Load/unload binary raw bytes, metadata
-    - Improve RTL parser
-* Applications
+The SBA framework is currently undergoing a significant overhaul:
+* **Architecture & Robustness**
+  - **Disassembler:** Develop a robust, architecture-agnostic disassembler leveraging *LLVM MC* for high-fidelity binary analysis.
+  - **Binary Loading:** Integrate *LLVMObject* for reliable, cross-platform support of ELF, PE, and Mach-O executable formats.
+  - **Lifting:** Implement a high-performance C++ lifter to replace the legacy OCaml pipeline.
+* **Framework Capabilities**
+  - Redesign *ControlFlowGraphAPI* to support diverse graph types and construction strategies.
+  - Refactor *AnalysisAPI* to allow seamless integration of custom abstract domains.
+* **Applications**
   - Jump table analysis
     - Improve bounds analysis
   - Function properties
     - Callee-saved registers preservation
     - Invalid pointer dereference
   - Non-returning call analysis
-* Novel binary analysis techniques
+* **Novel Analysis Techniques**
   - To be announced!
 
 ## What A Binary Analysis Framework Should Do?
@@ -34,11 +31,29 @@ We are planning a major overhaul for the SBA framework, starting from June 2025:
 
 ## Getting Started
 ### Dependencies
+SBA requires a C++20 compiler (GCC/Clang), CMake, and OCaml.
+We recommend using **Opam** to manage the OCaml environment, as it ensures compatibility across different Linux distributions.
+
+#### 1. Install System Tools
+```bash
+# Fedora/RHEL
+sudo dnf install gcc-c++ make cmake opam patch
+
+# Ubuntu/Debian
+sudo apt-get install build-essential cmake opam
 ```
-sudo apt-get install g++ ocaml camlp4-extra camlp4 tar cmake make
+
+#### 2. Configure OCaml Environment
+Initialize Opam and create a switch for OCaml 4.14 (required for the legacy lifter):
+```bash
+opam init
+opam switch create sba 4.14.2
+eval $(opam env)
+opam install camlp4 ocamlfind
 ```
+
 ### Build SBA
-```
+```bash
 mkdir build && cd build
 cmake .. && make -j4
 ```
