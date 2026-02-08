@@ -1,3 +1,5 @@
+add_subdirectory(lift)
+
 add_library(analysis
 	util/common.cpp
 	core/framework.cpp
@@ -22,5 +24,3 @@ target_include_directories(analysis PUBLIC
 target_include_directories(analysis PRIVATE
 	${OCAML_LIB_PATH}
 )
-
-add_subdirectory(lift)

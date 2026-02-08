@@ -1,3 +1,11 @@
+execute_process(
+	COMMAND ocamlc -where
+	OUTPUT_VARIABLE OCAML_LIB_PATH
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+set(OCAML_LIB_PATH ${OCAML_LIB_PATH} CACHE INTERNAL "OCaml library path")
+
 set(LISC_SRC
 	Makefile
 	learn.ml learn.mli lexAsm.mll lexRtl.mll main.ml
