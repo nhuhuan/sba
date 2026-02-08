@@ -37,10 +37,10 @@ We recommend using **Opam** to manage the OCaml environment, as it ensures compa
 #### 1. Install System Tools
 ```bash
 # Fedora/RHEL
-sudo dnf install gcc-c++ make cmake opam patch
+sudo dnf install clang make cmake ninja-build opam patch
 
 # Ubuntu/Debian
-sudo apt-get install build-essential cmake opam
+sudo apt-get install clang make cmake ninja-build opam
 ```
 
 #### 2. Configure OCaml Environment
@@ -55,18 +55,19 @@ opam install camlp4 ocamlfind
 ### Build SBA
 ```bash
 mkdir build && cd build
-cmake .. && make -j4
+cmake .. -G Ninja -DCMAKE_CXX_COMPILER=clang++
+ninja -j4
 ```
 
 ## Applications
 ### Jump Table Analysis
 To analyze a binary object `~/obj`, use the following command:
 ```
-./jump_table x86_64.auto ~/obj
+./tools/jump_table x86_64.auto ~/obj
 ```
-By default, SBA creates temporary files and outputs result in `/tmp/sba/`. These paths can be specifed using `-d` and `-o` as follows:
+By default, SBA creates temporary files and outputs result in `/tmp/sba/`. These paths can be specified using `-d` and `-o` as follows:
 ```
-./jump_table -d /tmp/sba/ -o /tmp/sba/result x86_64.auto ~/obj
+./tools/jump_table -d /tmp/sba/ -o /tmp/sba/result x86_64.auto ~/obj
 ```
 
 ## Publications

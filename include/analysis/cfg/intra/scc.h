@@ -1,0 +1,43 @@
+/*
+    Copyright (C) 2018 - 2026 Huan Nguyen.
+ */
+
+#ifndef SCC_H
+#define SCC_H
+
+#include <analysis/core/state.h>
+#include <analysis/util/common.h>
+
+namespace SBA {
+   /* Forward declaration */
+   class Block;
+   class State;
+   /* ---------------------------------- SCC -------------------------------- */
+   class SCC {
+    public:
+      vector<Block*> ext_target;
+
+    private:
+      vector<Block*> b_list_;
+
+    public:
+      SCC(): ext_target({}), b_list_({}) {};
+      ~SCC();
+
+      /* accessor */
+      const vector<Block*>& block_list() const {return b_list_;};
+
+      /* cfg */
+      bool loop() const;
+      void build_cfg(Block* header);
+
+      /* analysis */
+      void execute(State& s) const;
+
+    private:
+      void dfs(Block* u);
+   };
+
+}
+
+#endif
