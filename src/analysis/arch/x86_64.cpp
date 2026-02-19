@@ -132,9 +132,13 @@ unordered_set<IMM> x86_64::definite_fptrs(const Object& info, const string& file
             + string("| awk '{print $4}' | sed 's/^0*//' >> ")
             + Framework::d_session + string("temp; ")
             + string("objdump -d ") + file
-             + string("| grep 'callq  ' | grep -v '\\*' | grep '^  ' ")
-             + string("| awk '{print $(NF-1)}' | sort -u >> ")
-             + Framework::d_session + string("temp");
+            + string("| grep 'callq  ' | grep -v '\\*' | grep '^  ' ")
+            + string("| awk '{print $(NF-1)}' | sort -u >> ")
+            + Framework::d_session + string("temp; ")
+            + string("readelf -h ") + file
+            + string(" | grep 'Entry point address' | awk '{print $4}'")
+            + string(" | sed 's/^0x//' >> ")
+            + Framework::d_session + string("temp");
    (void)!system(cmd.c_str());
 
    string s;
