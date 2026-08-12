@@ -7,6 +7,8 @@ module sba.lift.dedup;
 
 namespace SBA::Lift {
 
+	using namespace SBA::IR;
+
 	inline void hash_combine(std::size_t& seed, uint64_t val) noexcept
 	{
 		if constexpr(sizeof(std::size_t) == 8) {
@@ -18,37 +20,40 @@ namespace SBA::Lift {
 		}
 	}
 
-	std::size_t Hasher::operator()(const SBA::IR::Memory& m) const noexcept
+	std::size_t Hasher::operator()(const Memory& m) const noexcept
 	{
 		std::size_t seed = 0;
-		hash_combine(seed, (static_cast<uint64_t>(m.base.raw) << 32) |
-							static_cast<uint64_t>(m.displacement));
+		hash_combine(seed, (uint64_t)(uint32_t)m.displacement);
+		hash_combine(seed, ((uint64_t)m.base << 48)        |
+						   ((uint64_t)m.llength_addr << 4) |
+						   ((uint64_t)m.llength));
 		return seed;
 	}
 
-	std::size_t Hasher::operator()(const SBA::IR::MemorySIB& m) const noexcept
+	std::size_t Hasher::operator()(const MemoryExt& m) const noexcept
 	{
 		std::size_t seed = 0;
-		hash_combine(seed, (static_cast<uint64_t>(m.length) << 48)   |
-						   (static_cast<uint64_t>(m.segment) << 40)  |
-						   (static_cast<uint64_t>(m.scale) << 32)    |
-						   (static_cast<uint64_t>(m.displacement)));
-		hash_combine(seed, (static_cast<uint64_t>(m.base.raw) << 32) |
-						   (static_cast<uint64_t>(m.index.raw)));
+		hash_combine(seed, (uint64_t)(uint32_t)m.displacement);
+		hash_combine(seed, ((uint64_t)m.base << 48)        |
+						   ((uint64_t)m.index << 32)       |
+						   ((uint64_t)m.segment << 16)     |
+						   ((uint64_t)m.scale << 8)        |
+						   ((uint64_t)m.llength_addr << 4) |
+						   ((uint64_t)m.llength));
 		return seed;
 	}
 
-	std::size_t Hasher::operator()(const SBA::IR::Operation& op) const noexcept
+	std::size_t Hasher::operator()(const Operation& op) const noexcept
 	{
 		std::size_t seed = 0;
 		hash_combine(seed, op.type);
 		hash_combine(seed, op.length);
 
-		uint32_t index = op.index;
+		auto index = op.index;
 		for (uint32_t i = 0; i < op.count; ++i) {
-			auto opcode = static_cast<SBA::IR::Operator>((*raw)[index]);
-			auto count = sizeof(SBA::IR::Operand) *
-						 (1 + SBA::IR::arity(opcode)) + 1;
+			auto opcode = (Operator)(*raw)[index];
+			auto count = sizeof(Operand) * (1 + arity(opcode))
+					   + sizeof(Operator);
 
 			for (uint32_t j = 0; j < count; ++j)
 				hash_combine(seed, (*raw)[index + j]);
@@ -59,21 +64,21 @@ namespace SBA::Lift {
 	}
 
 	bool Hasher::operator()(
-		const SBA::IR::Operation& lhs,
-		const SBA::IR::Operation& rhs) const noexcept
+		const Operation& lhs,
+		const Operation& rhs) const noexcept
 	{
 		if (lhs.type != rhs.type || lhs.length != rhs.length ||
 			lhs.count != rhs.count)
 				return false;
 
-		uint32_t l_index = lhs.index;
-		uint32_t r_index = rhs.index;
+		auto l_index = lhs.index;
+		auto r_index = rhs.index;
 
 		for (uint32_t i = 0; i < lhs.count; ++i) {
-			auto l_opcode = static_cast<SBA::IR::Operator>((*raw)[l_index]);
-			auto r_opcode = static_cast<SBA::IR::Operator>((*raw)[r_index]);
-			auto count = sizeof(SBA::IR::Operand) *
-						 (1 + SBA::IR::arity(l_opcode)) + 1;
+			auto l_opcode = (Operator)(*raw)[l_index];
+			auto r_opcode = (Operator)(*raw)[r_index];
+			auto count = sizeof(Operand) * (1 + arity(l_opcode))
+					   + sizeof(Operator);
 
 			if (l_opcode != r_opcode)
 				return false;

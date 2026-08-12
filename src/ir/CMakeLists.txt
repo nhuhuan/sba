@@ -5,8 +5,8 @@ target_sources(ir
 		FILE_SET modules TYPE CXX_MODULES
 			BASE_DIRS ${CMAKE_SOURCE_DIR}/modules
 			FILES
-				${CMAKE_SOURCE_DIR}/modules/ir/arch.cppm
-				${CMAKE_SOURCE_DIR}/modules/ir/operation.cppm
+				${CMAKE_SOURCE_DIR}/modules/ir/syntax.cppm
+				${CMAKE_SOURCE_DIR}/modules/ir/constant.cppm
 				${CMAKE_SOURCE_DIR}/modules/ir/stream.cppm
 				${CMAKE_SOURCE_DIR}/modules/ir/semantics.cppm
 )
