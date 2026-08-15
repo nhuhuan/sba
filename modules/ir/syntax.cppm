@@ -38,8 +38,7 @@ export namespace SBA::IR {
 
 		struct {
 			uint32_t type  : 2;
-			uint32_t ext   : 1;
-			uint32_t index : 29;
+			uint32_t index : 30;
 		} mem;
 
 		struct {
@@ -61,37 +60,15 @@ export namespace SBA::IR {
 	};
 
 	struct Memory {
-		int32_t  displacement;
-		uint16_t base;
-		uint8_t  llength      : 4;
-		uint8_t  llength_addr : 4;
+		int32_t displacement;
+		uint8_t base;
+		uint8_t index;
+		uint8_t shift        : 4;
+		uint8_t extra        : 4;
+		uint8_t llength      : 4;
+		uint8_t llength_addr : 4;
 
-		constexpr bool operator==(const Memory& other) const noexcept {
-			return displacement == other.displacement &&
-				   base == other.base &&
-				   llength == other.llength &&
-				   llength_addr == other.llength_addr;
-		}
-	};
-
-	struct MemoryExt {
-		int32_t  displacement;
-		uint16_t base;
-		uint16_t index;
-		uint16_t segment;
-		uint8_t  scale;
-		uint8_t  llength      : 4;
-		uint8_t  llength_addr : 4;
-
-		constexpr bool operator==(const MemoryExt& other) const noexcept {
-			return displacement == other.displacement &&
-				   base == other.base &&
-				   index == other.index &&
-				   segment == other.segment &&
-				   scale == other.scale &&
-				   llength == other.llength &&
-				   llength_addr == other.llength_addr;
-		}
+		constexpr bool operator==(const Memory&) const noexcept = default;
 	};
 
 	struct Operation {

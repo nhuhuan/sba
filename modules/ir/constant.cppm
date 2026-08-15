@@ -28,7 +28,6 @@ export namespace SBA::IR {
 	inline constexpr Operand ANY_MEMORY = Operand {
 		.mem = {
 			.type = (uint32_t)OperandType::MEMORY,
-			.ext = 0,
 			.index = 0
 		}
 	};

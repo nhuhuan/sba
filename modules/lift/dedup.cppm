@@ -25,7 +25,6 @@ namespace SBA::Lift {
 		const SBA::Util::PVector<uint8_t>* raw = nullptr;
 
 		std::size_t operator()(const Memory& m) const noexcept;
-		std::size_t operator()(const MemoryExt& m) const noexcept;
 
 		std::size_t operator()(const Operation& op) const noexcept;
 		bool operator()(const Operation& lhs,
@@ -37,7 +36,6 @@ namespace SBA::Lift {
 		SBA::Util::PMap<uint64_t, uint32_t> imm64;
 		SBA::Util::PMap<uint32_t, uint32_t> pcrel;
 		SBA::Util::PMap<Memory, uint32_t, Hasher> mem;
-		SBA::Util::PMap<MemoryExt, uint32_t, Hasher> memext;
 		SBA::Util::PMap<Operation, uint32_t, Hasher, Hasher> op;
 
 		IRCache(const IRStream& stream)

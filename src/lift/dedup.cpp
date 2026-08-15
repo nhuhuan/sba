@@ -24,20 +24,10 @@ namespace SBA::Lift {
 	{
 		std::size_t seed = 0;
 		hash_combine(seed, (uint64_t)(uint32_t)m.displacement);
-		hash_combine(seed, ((uint64_t)m.base << 48)        |
-						   ((uint64_t)m.llength_addr << 4) |
-						   ((uint64_t)m.llength));
-		return seed;
-	}
-
-	std::size_t Hasher::operator()(const MemoryExt& m) const noexcept
-	{
-		std::size_t seed = 0;
-		hash_combine(seed, (uint64_t)(uint32_t)m.displacement);
-		hash_combine(seed, ((uint64_t)m.base << 48)        |
-						   ((uint64_t)m.index << 32)       |
-						   ((uint64_t)m.segment << 16)     |
-						   ((uint64_t)m.scale << 8)        |
+		hash_combine(seed, ((uint64_t)m.base << 24)        |
+						   ((uint64_t)m.index << 16)       |
+						   ((uint64_t)m.extra << 12)       |
+						   ((uint64_t)m.shift << 8)        |
 						   ((uint64_t)m.llength_addr << 4) |
 						   ((uint64_t)m.llength));
 		return seed;
