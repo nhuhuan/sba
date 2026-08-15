@@ -1,4 +1,8 @@
 module;
+#include <memory>
+#include <string>
+#include <span>
+#include <mutex>
 #include <llvm/MC/MCContext.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include <llvm/MC/MCDisassembler/MCDisassembler.h>
@@ -9,10 +13,6 @@ module;
 #include <llvm/MC/MCTargetOptions.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
-#include <memory>
-#include <string>
-#include <span>
-#include <mutex>
 
 module sba.lift.decoder;
 
@@ -105,7 +105,7 @@ namespace SBA::Lift {
 
 		if (status == llvm::MCDisassembler::Success && size > 0)
 			return DecoderInstruction{
-				.size = static_cast<uint8_t>(size),
+				.size = (uint8_t)size,
 				.inst = std::move(inst)
 			};
 

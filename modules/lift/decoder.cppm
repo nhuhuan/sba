@@ -1,8 +1,8 @@
 module;
-#include <llvm/MC/MCInst.h>
 #include <memory>
 #include <optional>
 #include <span>
+#include <llvm/MC/MCInst.h>
 
 namespace llvm {
 	class MCRegisterInfo;

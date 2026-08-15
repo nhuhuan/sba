@@ -5,6 +5,7 @@ module;
 #include <limits>
 #include <optional>
 #include <span>
+#include <vector>
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCRegisterInfo.h>
 
@@ -22,23 +23,37 @@ namespace SBA::Lift {
 
 	using namespace SBA::IR;
 
-	struct StoreDesc {
+	struct StoreOp {
 		Operator op;
 		Operand dst;
 		std::span<const Operand> src;
 	};
 
-	template <SBA::Binary::Arch TargetArch>
+	template <SBA::Binary::Arch Target>
+	std::optional<Operand> parse_memory(
+		std::span<const llvm::MCOperand> ops,
+		uint8_t llength,
+		IRStream& stream,
+		IRCache& cache,
+		const DecoderContext& dctx) noexcept;
+
+	template <SBA::Binary::Arch Target>
 	Operand parse_register(const std::string& name) noexcept;
 
-	template <SBA::Binary::Arch TargetArch>
+	template <SBA::Binary::Arch Target>
 	inline Operand parse_register(
 		uint32_t reg_id,
 		const DecoderContext& dctx) noexcept
 	{
-		return (!reg_id)
-			? NO_REGISTER
-			: parse_register<TargetArch>(dctx.register_info->getName(reg_id));
+		static const std::vector<Operand> reg_map = [&]() {
+			auto num_regs = dctx.register_info->getNumRegs();
+			std::vector<Operand> res(num_regs, NO_REGISTER);
+			for (int i = 1; i < num_regs; ++i)
+				res[i] = parse_register<Target>(dctx.register_info->getName(i));
+			return res;
+		}();
+
+		return reg_id ? reg_map[reg_id] : NO_REGISTER;
 	}
 
 	inline Operand parse_immediate(
@@ -92,79 +107,27 @@ namespace SBA::Lift {
 		};
 	}
 
-	template <SBA::Binary::Arch TargetArch>
-	inline std::optional<Operand> parse_memory(
-		std::span<const llvm::MCOperand> ops,
-		uint8_t llength,
-		IRStream& stream,
-		IRCache& cache,
-		const DecoderContext& dctx) noexcept
-	{
-		auto base = parse_register<TargetArch>(ops[0].getReg(), dctx);
-		auto index = parse_register<TargetArch>(ops[2].getReg(), dctx);
-
-		if (!ops[2].getReg() && !ops[4].getReg()) {
-			Memory mem {
-				.displacement = ops[3].getImm(),
-				.base = base.reg.id,
-				.llength = llength,
-				.llength_addr = base.reg.llength
-			};
-			return Operand {
-				.mem = {
-					.type = (uint32_t)OperandType::MEMORY,
-					.ext = 0,
-					.index = cache.mem.get_or_insert(
-						mem,
-						[&] {return stream.mem.push_back(std::move(mem));}
-					)
-				}
-			};
-		}
-		else {
-			MemoryExt mem {
-				.displacement = ops[3].getImm(),
-				.base = base.reg.id,
-				.index = index.reg.id,
-				.segment = ops[4].getReg(),
-				.scale = ops[1].getImm(),
-				.llength = llength,
-				.llength_addr = std::max(base.reg.llength, index.reg.llength)
-			};
-			return Operand {
-				.mem = {
-					.type = (uint32_t)OperandType::MEMORY,
-					.ext = 1,
-					.index = cache.memext.get_or_insert(
-						mem,
-						[&] {return stream.memext.push_back(std::move(mem));}
-					)
-				}
-			};
-		}
-	}
-
 	inline uint32_t serialize_stores(
 		IRStream& stream,
-		std::span<const StoreDesc> descs) noexcept
+		std::span<const StoreOp> stores) noexcept
 	{
 		size_t total_size = 0;
-		for (const auto& desc : descs)
+		for (const auto& store : stores)
 			total_size += sizeof(Operator)
-						+ sizeof(Operand) * (1 + desc.src.size());
+						+ sizeof(Operand) * (1 + store.src.size());
 
 		uint32_t index = stream.raw.reserve(total_size);
 		uint32_t offset = index;
 
-		for (const auto& desc : descs) {
-			stream.raw[offset] = (uint8_t)desc.op;
+		for (const auto& store : stores) {
+			stream.raw[offset] = (uint8_t)store.op;
 			offset += sizeof(Operator);
 
-			std::memcpy(&stream.raw[offset], &desc.dst,
+			std::memcpy(&stream.raw[offset], &store.dst,
 			            sizeof(Operand));
 			offset += sizeof(Operand);
 
-			for (const auto& src : desc.src) {
+			for (const auto& src : store.src) {
 				std::memcpy(&stream.raw[offset], &src,
 				            sizeof(Operand));
 				offset += sizeof(Operand);

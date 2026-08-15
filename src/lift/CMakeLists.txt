@@ -7,9 +7,12 @@ target_sources(lift
 			FILES
 				${CMAKE_SOURCE_DIR}/modules/lift/dedup.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/decoder.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/parse.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/lift.cppm
 	PRIVATE
 		dedup.cpp
 		decoder.cpp
+		x86_64.cpp
 )
 
 target_link_libraries(lift
