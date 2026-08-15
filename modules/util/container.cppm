@@ -15,8 +15,8 @@ export namespace SBA::Util {
 	template <typename T>
 	class PVector {
 	private:
-		static constexpr size_t SEGMENT_SIZE = (1 << 16);
-		static constexpr size_t NUM_SEGMENTS = (1 << 16);
+		static constexpr size_t SEGMENT_SIZE = (1 << 21) / sizeof(T);
+		static constexpr size_t NUM_SEGMENTS = (1ULL << 32) / SEGMENT_SIZE;
 
 		using Segment = std::array<T, SEGMENT_SIZE>;
 		std::atomic<uint32_t> size_;
@@ -50,7 +50,7 @@ export namespace SBA::Util {
 		PVector(const PVector&) = delete;
 		PVector& operator=(const PVector&) = delete;
 
-		uint32_t push_back(const T& val) noexcept {
+		uint32_t push_back(T val) noexcept {
 			auto index = size_.fetch_add(1, std::memory_order_relaxed);
 			auto s_index = index / SEGMENT_SIZE;
 			auto s_offset = index % SEGMENT_SIZE;
@@ -58,21 +58,24 @@ export namespace SBA::Util {
 			return index;
 		}
 
-		uint32_t push_back(T&& val) noexcept {
-			auto index = size_.fetch_add(1, std::memory_order_relaxed);
-			auto s_index = index / SEGMENT_SIZE;
-			auto s_offset = index % SEGMENT_SIZE;
-			(*segment(s_index))[s_offset] = std::move(val);
-			return index;
-		}
-
 		uint32_t reserve(uint32_t count) noexcept {
-			auto index = size_.fetch_add(count, std::memory_order_relaxed);
-			auto s_start = index / SEGMENT_SIZE;
-			auto s_end = (index + count - 1) / SEGMENT_SIZE;
-			for (auto s_index = s_start; s_index <= s_end; ++s_index)
-				segment(s_index);
-			return index;
+			uint32_t old_index = size_.load(std::memory_order_relaxed);
+			while (true) {
+				uint32_t s_offset = old_index % SEGMENT_SIZE;
+				uint32_t index = (s_offset + count > SEGMENT_SIZE)
+					? old_index + (SEGMENT_SIZE - s_offset)
+					: old_index;
+
+				if (size_.compare_exchange_weak(
+					old_index,
+					index + count,
+					std::memory_order_relaxed))
+				{
+					auto s_index = index / SEGMENT_SIZE;
+					segment(s_index);
+					return index;
+				}
+			}
 		}
 
 		T& operator[](uint32_t index) noexcept {
