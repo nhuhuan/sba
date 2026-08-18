@@ -10,11 +10,11 @@ import sba.util.container;
 export namespace SBA::IR {
 
 	struct IRStream {
-		SBA::Util::PVector<uint8_t>  raw;
-		SBA::Util::PVector<uint32_t> imm32;
-		SBA::Util::PVector<uint64_t> imm64;
-		SBA::Util::PVector<uint32_t> pcrel;
-		SBA::Util::PVector<Memory>   mem;
+		SBA::Util::PVector<uint8_t,  (1ULL << 32)> raw;
+		SBA::Util::PVector<uint32_t, (1ULL << 32)> imm32;
+		SBA::Util::PVector<uint64_t, (1ULL << 32)> imm64;
+		SBA::Util::PVector<uint32_t, (1ULL << 32)> pcrel;
+		SBA::Util::PVector<Memory,   (1ULL << 32)> mem;
 
 		IRStream() {
 			mem.push_back(

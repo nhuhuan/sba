@@ -90,7 +90,7 @@ namespace SBA::Lift {
 		return Operand {
 			.mem = {
 				.type = (uint32_t)OperandType::MEMORY,
-				.index = cache.mem.get_or_insert(
+				.index = (uint32_t)*cache.mem.get_or_insert(
 					mem,
 					[&] {return stream.mem.push_back(mem);}
 				)

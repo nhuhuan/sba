@@ -53,7 +53,7 @@ namespace SBA::Lift {
 		return seed;
 	}
 
-	bool Hasher::operator()(
+	bool Equal::operator()(
 		const Operation& lhs,
 		const Operation& rhs) const noexcept
 	{

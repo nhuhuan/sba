@@ -69,7 +69,7 @@ namespace SBA::Lift {
 				.imm = {
 					.type = (uint32_t)OperandType::IMMEDIATE,
 					.wide = 0,
-					.index = cache.imm32.get_or_insert(
+					.index = (uint32_t)*cache.imm32.get_or_insert(
 						(uint32_t)imm,
 						[&] {return stream.imm32.push_back((uint32_t)imm);}
 					)
@@ -80,7 +80,7 @@ namespace SBA::Lift {
 				.imm = {
 					.type = (uint32_t)OperandType::IMMEDIATE,
 					.wide = 1,
-					.index = cache.imm64.get_or_insert(
+					.index = (uint32_t)*cache.imm64.get_or_insert(
 						imm,
 						[&] {return stream.imm64.push_back(imm);}
 					)
@@ -99,7 +99,7 @@ namespace SBA::Lift {
 		return Operand {
 			.pcrel = {
 				.type = (uint32_t)OperandType::PC_RELATIVE,
-				.index = cache.pcrel.get_or_insert(
+				.index = (uint32_t)*cache.pcrel.get_or_insert(
 					imm,
 					[&] {return stream.pcrel.push_back(imm);}
 				)
@@ -116,7 +116,7 @@ namespace SBA::Lift {
 			total_size += sizeof(Operator)
 						+ sizeof(Operand) * (1 + store.src.size());
 
-		uint32_t index = stream.raw.reserve(total_size);
+		uint32_t index = (uint32_t)*stream.raw.reserve(total_size);
 		uint32_t offset = index;
 
 		for (const auto& store : stores) {

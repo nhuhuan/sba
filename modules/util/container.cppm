@@ -5,14 +5,32 @@ module;
 #include <cstdint>
 #include <mutex>
 #include <memory>
+#include <optional>
 #include <vector>
 #include <unordered_map>
 
 export module sba.util.container;
 
-export namespace SBA::Util {
+namespace SBA::Util {
 
 	template <typename T>
+	struct SplitMix64 {
+		size_t operator()(T key) const noexcept {
+			uint64_t x = (uint64_t)key;
+			x ^= x >> 30;
+			x *= 0xbf58476d1ce4e5b9ULL;
+			x ^= x >> 27;
+			x *= 0x94d049bb133111ebULL;
+			x ^= x >> 31;
+			return x;
+		}
+	};
+
+}
+
+export namespace SBA::Util {
+
+	template <typename T, uint64_t MaxSize>
 	class PVector {
 	private:
 		static constexpr size_t SEGMENT_SIZE = (1 << 21) / sizeof(T);
@@ -50,30 +68,35 @@ export namespace SBA::Util {
 		PVector(const PVector&) = delete;
 		PVector& operator=(const PVector&) = delete;
 
-		uint32_t push_back(T val) noexcept {
-			auto index = size_.fetch_add(1, std::memory_order_relaxed);
-			auto s_index = index / SEGMENT_SIZE;
-			auto s_offset = index % SEGMENT_SIZE;
+		std::optional<uint32_t> push_back(T val) noexcept {
+			auto index = reserve(1);
+			if (!index)
+				return std::nullopt;
+
+			auto s_index = *index / SEGMENT_SIZE;
+			auto s_offset = *index % SEGMENT_SIZE;
 			(*segment(s_index))[s_offset] = val;
 			return index;
 		}
 
-		uint32_t reserve(uint32_t count) noexcept {
-			uint32_t old_index = size_.load(std::memory_order_relaxed);
+		std::optional<uint32_t> reserve(uint32_t count) noexcept {
+			uint32_t index = size_.load(std::memory_order_relaxed);
+
 			while (true) {
-				uint32_t s_offset = old_index % SEGMENT_SIZE;
-				uint32_t index = (s_offset + count > SEGMENT_SIZE)
-					? old_index + (SEGMENT_SIZE - s_offset)
-					: old_index;
+				uint64_t remaining = SEGMENT_SIZE - (index % SEGMENT_SIZE);
+				uint64_t curr = (uint64_t)index + remaining * (count > remaining);
+				uint64_t next = curr + count;
+
+				if (next > MaxSize)
+					return std::nullopt;
 
 				if (size_.compare_exchange_weak(
-					old_index,
-					index + count,
+					index,
+					(uint32_t)next,
 					std::memory_order_relaxed))
 				{
-					auto s_index = index / SEGMENT_SIZE;
-					segment(s_index);
-					return index;
+					segment((uint32_t)curr / SEGMENT_SIZE);
+					return (uint32_t)curr;
 				}
 			}
 		}
@@ -123,7 +146,7 @@ export namespace SBA::Util {
 
 	template <typename Key,
 			  typename Value,
-			  typename Hash = std::hash<Key>,
+			  typename Hash = SplitMix64<Key>,
 			  typename KeyEqual = std::equal_to<Key>>
 	class PMap {
 	private:
@@ -149,7 +172,7 @@ export namespace SBA::Util {
 		PMap& operator=(const PMap&) = delete;
 
 		template <typename Fn>
-		Value get_or_insert(const Key& key, Fn insert) {
+		std::optional<Value> get_or_insert(const Key& key, Fn insert) {
 			size_t h = Hash{}(key);
 			size_t idx = h % NUM_SHARDS;
 			auto& shard = shards[idx];
@@ -157,8 +180,10 @@ export namespace SBA::Util {
 			auto it = shard.map.find(key);
 			if (it != shard.map.end())
 				return it->second;
-			Value val = insert();
-			shard.map.insert({key, val});
+			auto val = insert();
+			if (!val)
+				return std::nullopt;
+			shard.map.insert({key, *val});
 			return val;
 		}
 	};

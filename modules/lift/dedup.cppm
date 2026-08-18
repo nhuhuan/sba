@@ -22,11 +22,15 @@ namespace SBA::Lift {
 	using namespace SBA::IR;
 
 	struct Hasher {
-		const SBA::Util::PVector<uint8_t>* raw = nullptr;
+		const SBA::Util::PVector<uint8_t, (1ULL << 32)>* raw = nullptr;
 
 		std::size_t operator()(const Memory& m) const noexcept;
-
 		std::size_t operator()(const Operation& op) const noexcept;
+	};
+
+	struct Equal {
+		const SBA::Util::PVector<uint8_t, (1ULL << 32)>* raw = nullptr;
+
 		bool operator()(const Operation& lhs,
 						const Operation& rhs) const noexcept;
 	};
@@ -36,11 +40,11 @@ namespace SBA::Lift {
 		SBA::Util::PMap<uint64_t, uint32_t> imm64;
 		SBA::Util::PMap<uint32_t, uint32_t> pcrel;
 		SBA::Util::PMap<Memory, uint32_t, Hasher> mem;
-		SBA::Util::PMap<Operation, uint32_t, Hasher, Hasher> op;
+		SBA::Util::PMap<Operation, uint32_t, Hasher, Equal> op;
 
 		IRCache(const IRStream& stream)
 			: op(Hasher{&stream.raw},
-				 Hasher{&stream.raw}) {}
+				 Equal{&stream.raw}) {}
 	};
 
 }
