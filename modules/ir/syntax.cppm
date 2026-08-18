@@ -1,12 +1,18 @@
 module;
 #include <bit>
+#include <cstddef>
 #include <cstdint>
 
 export module sba.ir.syntax;
 
 export namespace SBA::IR {
 
-	enum class OperationType : uint8_t {
+	inline constexpr size_t IMM_BITS   = 29;
+	inline constexpr size_t MEM_BITS   = 30;
+	inline constexpr size_t PCREL_BITS = 30;
+	inline constexpr size_t INST_BITS  = 32;
+
+	enum class InstructionType : uint8_t {
 		STORE,
 		SYSCALL,
 		FENCE,
@@ -24,26 +30,27 @@ export namespace SBA::IR {
 
 	union Operand {
 		struct {
-			uint32_t type    : 2;
-			uint32_t llength : 4;
-			uint32_t id      : 16;
-			uint32_t offset  : 8;
+			uint32_t type     : 2;
+			uint32_t llength  : 4;
+			uint32_t index    : 8;
+			uint32_t offset   : 8;
+			uint32_t          : 10;
 		} reg;
 
 		struct {
 			uint32_t type  : 2;
 			uint32_t wide  : 1;
-			uint32_t index : 29;
+			uint32_t index : IMM_BITS;
 		} imm;
 
 		struct {
 			uint32_t type  : 2;
-			uint32_t index : 30;
+			uint32_t index : MEM_BITS;
 		} mem;
 
 		struct {
 			uint32_t type  : 2;
-			uint32_t index : 30;
+			uint32_t index : PCREL_BITS;
 		} pcrel;
 
 		constexpr OperandType type() const noexcept {
@@ -71,11 +78,10 @@ export namespace SBA::IR {
 		constexpr bool operator==(const Memory&) const noexcept = default;
 	};
 
-	struct Operation {
-		uint64_t type   : 3;
-		uint64_t length : 4;
-		uint64_t count  : 3;
-		uint64_t index  : 54;
+	struct Instruction {
+		uint32_t index : INST_BITS;
+
+		constexpr bool operator==(const Instruction&) const noexcept = default;
 	};
 
 }

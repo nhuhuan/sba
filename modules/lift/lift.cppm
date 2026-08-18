@@ -1,6 +1,7 @@
 module;
 #include <cassert>
 #include <cstdint>
+#include <span>
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCInstrInfo.h>
 #include <llvm/MC/MCInstrDesc.h>
@@ -9,21 +10,21 @@ export module sba.lift;
 
 import sba.binary.types;
 import sba.lift.decoder;
-import sba.lift.dedup;
+import sba.lift.cache;
 import sba.ir.syntax;
 import sba.ir.constant;
 import sba.ir.stream;
 import sba.ir.semantics;
 
-import :parse;
+import sba.lift.encoder;
 
 namespace SBA::Lift {
 
 	using namespace SBA::IR;
-	inline constexpr size_t MAX_STORES_PER_INST = 5;
+	inline constexpr size_t MAX_OPS_PER_INST = 5;
 
 	template <SBA::Binary::Arch Target>
-	std::optional<Operation> lift_arch(
+	std::optional<Instruction> lift_arch(
 		const DecoderInstruction& inst,
 		IRStream& stream,
 		IRCache& cache,
@@ -31,45 +32,50 @@ namespace SBA::Lift {
 	) noexcept;
 
 	template <SBA::Binary::Arch Target>
-	inline Operation lift_default(
+	inline Instruction lift_default(
 		const DecoderInstruction& inst,
 		IRStream& stream,
 		IRCache& cache,
 		const DecoderContext& dctx)
 	{
 		const auto& desc = dctx.instruction_info->get(inst.inst.getOpcode());
-		std::array<StoreOp, MAX_STORES_PER_INST> stores;
+		std::array<Operator, MAX_OPS_PER_INST> opcodes;
+		std::array<Operand, MAX_OPS_PER_INST> operands;
 		size_t count = 0;
 
 		auto add_clobber = [&](Operand dst) {
-			assert(count < stores.size());
-			stores[count++] = {Operator::CLOBBERED, dst, {}};
+			assert(count < opcodes.size());
+			opcodes[count] = Operator::CLOBBERED;
+			operands[count] = dst;
+			count++;
 		};
 
 		for (int i = 0; i < desc.getNumDefs(); ++i) {
-			auto dest = parse_register<Target>(
+			auto dst = parse_register<Target>(
 				inst.inst.getOperand(i).getReg(),
 				dctx
 			);
-			if (dest != NO_REGISTER)
-				add_clobber(dest);
+			if (dst != NO_REGISTER)
+				add_clobber(dst);
 		}
 
 		for (auto reg : desc.implicit_defs()) {
-			auto dest = parse_register<Target>(reg, dctx);
-			if (dest != NO_REGISTER)
-				add_clobber(dest);
+			auto dst = parse_register<Target>(reg, dctx);
+			if (dst != NO_REGISTER)
+				add_clobber(dst);
 		}
 
 		if (desc.mayStore())
 			add_clobber(ANY_MEMORY);
 
-		return Operation {
-			.type = (uint64_t)OperationType::STORE,
-			.length = inst.size,
-			.count = count,
-			.index = serialize_stores(stream, {stores.data(), count})
-		};
+		return serialize_inst(
+			InstructionType::STORE,
+			inst.size,
+			{opcodes.data(), count},
+			{operands.data(), count},
+			stream,
+			cache
+		);
 	}
 
 }
@@ -77,7 +83,7 @@ namespace SBA::Lift {
 export namespace SBA::Lift {
 
 	template <SBA::Binary::Arch Target>
-	inline Operation lift(
+	inline Instruction lift(
 		const DecoderInstruction& inst,
 		IRStream& stream,
 		IRCache& cache,

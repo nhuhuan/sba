@@ -11,7 +11,7 @@ export namespace SBA::IR {
 		.reg = {
 			.type = (uint32_t)OperandType::REGISTER,
 			.llength = 0,
-			.id = 0,
+			.index = 0,
 			.offset = 0
 		}
 	};
@@ -20,7 +20,7 @@ export namespace SBA::IR {
 		.reg = {
 			.type = (uint32_t)OperandType::REGISTER,
 			.llength = 0,
-			.id = 1,
+			.index = 1,
 			.offset = 0
 		}
 	};

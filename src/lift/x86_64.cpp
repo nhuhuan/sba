@@ -6,17 +6,18 @@ module;
 #include <algorithm>
 #include <cctype>
 #include <span>
+#include <cassert>
 #include <llvm/MC/MCInst.h>
 
 module sba.lift;
 
 import sba.arch.x86_64;
 import sba.lift.decoder;
-import sba.lift.dedup;
+import sba.lift.cache;
 import sba.ir.syntax;
 import sba.ir.stream;
 
-import :parse;
+import sba.lift.encoder;
 
 namespace SBA::Lift {
 
@@ -47,7 +48,7 @@ namespace SBA::Lift {
 				.reg = {
 					.type = (uint32_t)OperandType::REGISTER,
 					.llength = it->llength,
-					.id = (uint32_t)it->base,
+					.index = (uint32_t)it->base,
 					.offset = it->offset
 				}
 			};
@@ -78,28 +79,33 @@ namespace SBA::Lift {
 
 		Memory mem {
 			.displacement = (int32_t)ops[3].getImm(),
-			.base = (uint8_t)base.reg.id,
-			.index = (uint8_t)index.reg.id,
+			.base = (uint8_t)base.reg.index,
+			.index = (uint8_t)index.reg.index,
 			.shift = (uint8_t)std::countr_zero((unsigned)ops[1].getImm()),
-			.extra = (uint8_t)segment.reg.id,
+			.extra = (uint8_t)segment.reg.index,
 			.llength = llength,
-			.llength_addr =
-				(uint8_t)std::max(base.reg.llength, index.reg.llength)
+			.llength_addr = (uint8_t)std::max(
+				base.reg.llength,
+				index.reg.llength
+			)
 		};
+
+		auto m_index = cache.mem.get_or_insert(
+			std::bit_cast<uint64_t>(mem),
+			[&] {return stream.mem.push_back(mem);}
+		);
+		assert(m_index);
 
 		return Operand {
 			.mem = {
 				.type = (uint32_t)OperandType::MEMORY,
-				.index = (uint32_t)*cache.mem.get_or_insert(
-					mem,
-					[&] {return stream.mem.push_back(mem);}
-				)
+				.index = (uint32_t)*m_index
 			}
 		};
 	}
 
 	template <>
-	std::optional<Operation> lift_arch<SBA::Binary::Arch::X86_64>(
+	std::optional<Instruction> lift_arch<SBA::Binary::Arch::X86_64>(
 		const DecoderInstruction& inst,
 		IRStream& stream,
 		IRCache& cache,
