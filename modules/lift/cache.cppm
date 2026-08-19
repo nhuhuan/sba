@@ -1,9 +1,9 @@
 module;
 #include <cstdint>
 
-export module sba.lift.cache;
+export module sba.lift:cache;
 
-import sba.util.container;
+import sba.util;
 
 export namespace SBA::Lift {
 

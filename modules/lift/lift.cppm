@@ -8,15 +8,11 @@ module;
 
 export module sba.lift;
 
-import sba.binary.types;
-import sba.lift.decoder;
-import sba.lift.cache;
-import sba.ir.syntax;
-import sba.ir.constant;
-import sba.ir.stream;
-import sba.ir.semantics;
-
-import sba.lift.encoder;
+import sba.binary;
+import sba.ir;
+import :decoder;
+import :cache;
+import :encoder;
 
 namespace SBA::Lift {
 

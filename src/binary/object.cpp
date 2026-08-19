@@ -7,9 +7,10 @@ module;
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/Error.h>
 
-module sba.binary.object;
+module sba.binary;
 
-import sba.binary.elf;
+import :object;
+import :elf;
 
 namespace SBA::Binary {
 

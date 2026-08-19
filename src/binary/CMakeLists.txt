@@ -9,6 +9,7 @@ target_sources(binary
 				${CMAKE_SOURCE_DIR}/modules/binary/object.cppm
 				${CMAKE_SOURCE_DIR}/modules/binary/elf.cppm
 				${CMAKE_SOURCE_DIR}/modules/binary/error.cppm
+				${CMAKE_SOURCE_DIR}/modules/binary/binary.cppm
 	PRIVATE
 		types.cpp
 		object.cpp

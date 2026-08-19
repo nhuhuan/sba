@@ -1,11 +1,11 @@
 module;
 #include <cstdint>
 
-export module sba.ir.stream;
+export module sba.ir:stream;
 
-import sba.ir.syntax;
-import sba.ir.constant;
-import sba.util.container;
+import sba.util;
+import :syntax;
+import :constant;
 
 export namespace SBA::IR {
 

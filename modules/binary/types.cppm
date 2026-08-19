@@ -4,7 +4,7 @@ module;
 #include <optional>
 #include <string>
 
-export module sba.binary.types;
+export module sba.binary:types;
 
 export namespace SBA::Binary {
 

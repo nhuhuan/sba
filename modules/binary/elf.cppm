@@ -5,10 +5,10 @@ module;
 #include <vector>
 #include <llvm/Object/ObjectFile.h>
 
-export module sba.binary.elf;
+export module sba.binary:elf;
 
-import sba.binary.types;
-import sba.binary.error;
+import :types;
+import :error;
 
 export namespace SBA::Binary {
 

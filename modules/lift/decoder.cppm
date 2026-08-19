@@ -14,9 +14,9 @@ namespace llvm {
 	class Target;
 }
 
-export module sba.lift.decoder;
+export module sba.lift:decoder;
 
-import sba.binary.types;
+import sba.binary;
 
 export namespace SBA::Lift {
 

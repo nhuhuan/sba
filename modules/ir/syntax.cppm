@@ -3,7 +3,7 @@ module;
 #include <cstddef>
 #include <cstdint>
 
-export module sba.ir.syntax;
+export module sba.ir:syntax;
 
 export namespace SBA::IR {
 

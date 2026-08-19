@@ -12,12 +12,10 @@ module;
 module sba.lift;
 
 import sba.arch.x86_64;
-import sba.lift.decoder;
-import sba.lift.cache;
-import sba.ir.syntax;
-import sba.ir.stream;
-
-import sba.lift.encoder;
+import sba.ir;
+import :decoder;
+import :cache;
+import :encoder;
 
 namespace SBA::Lift {
 

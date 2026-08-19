@@ -14,9 +14,10 @@ module;
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 
-module sba.lift.decoder;
+module sba.lift;
 
-import sba.binary.object;
+import sba.binary;
+import :decoder;
 
 namespace SBA::Lift {
 

@@ -4,7 +4,7 @@ module;
 #include <tuple>
 #include <string>
 
-export module sba.ir.semantics;
+export module sba.ir:semantics;
 
 export namespace SBA::IR {
 

@@ -5,10 +5,10 @@ module;
 #include <string>
 #include <vector>
 
-export module sba.binary.object;
+export module sba.binary:object;
 
-export import sba.binary.types;
-export import sba.binary.error;
+import :types;
+import :error;
 
 export namespace SBA::Binary {
 

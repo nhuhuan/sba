@@ -3,7 +3,9 @@ module;
 #include <optional>
 #include <llvm/Support/Endian.h>
 
-module sba.binary.types;
+module sba.binary;
+
+import :types;
 
 namespace SBA::Binary {
 

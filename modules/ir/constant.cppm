@@ -1,9 +1,9 @@
 module;
 #include <cstdint>
 
-export module sba.ir.constant;
+export module sba.ir:constant;
 
-import sba.ir.syntax;
+import :syntax;
 
 export namespace SBA::IR {
 

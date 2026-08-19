@@ -3,7 +3,7 @@ module;
 #include <cstddef>
 #include <cstring>
 
-export module sba.util.wyhash;
+export module sba.util:wyhash;
 
 namespace SBA::Util {
 

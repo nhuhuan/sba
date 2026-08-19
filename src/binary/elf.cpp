@@ -10,7 +10,11 @@ module;
 #include <llvm/BinaryFormat/ELF.h>
 #include <llvm/ADT/iterator_range.h>
 
-module sba.binary.elf;
+module sba.binary;
+
+import :elf;
+import :types;
+import :error;
 
 namespace SBA::Binary {
 

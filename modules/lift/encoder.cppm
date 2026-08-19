@@ -9,18 +9,15 @@ module;
 #include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCRegisterInfo.h>
 
-export module sba.lift.encoder;
+export module sba.lift:encoder;
 
-import sba.binary.types;
-import sba.lift.decoder;
-import sba.lift.cache;
-import sba.ir.syntax;
-import sba.ir.constant;
-import sba.ir.stream;
-import sba.ir.semantics;
-import sba.util.wyhash;
+import sba.binary;
+import sba.ir;
+import sba.util;
+import :decoder;
+import :cache;
 
-export namespace SBA::Lift {
+namespace SBA::Lift {
 
 	using namespace SBA::IR;
 
@@ -110,7 +107,7 @@ export namespace SBA::Lift {
 		};
 	}
 
-	inline constexpr uint8_t inst_header(
+	static inline constexpr uint8_t inst_header(
 		InstructionType type,
 		uint8_t count,
 		uint8_t length) noexcept
@@ -118,10 +115,10 @@ export namespace SBA::Lift {
 		uint8_t tag = (type == InstructionType::STORE)
 					? (count & 0x7)
 					: (((uint8_t)type & 0x7) | 0x8);
-		return (tag << 4) | (length & 0xF);
+		return (tag << 4) | (length & 0xf);
 	}
 
-	inline uint64_t hash_inst(
+	static inline uint64_t inst_hash(
 		uint8_t header,
 		std::span<const Operator> opcodes,
 		std::span<const Operand> operands) noexcept
@@ -153,7 +150,7 @@ export namespace SBA::Lift {
 		uint8_t header = inst_header(type, (uint8_t)opcodes.size(), length);
 
 		auto index = cache.inst.get_or_insert(
-			hash_inst(header, opcodes, operands),
+			inst_hash(header, opcodes, operands),
 			[&]() -> std::optional<uint32_t> {
 				size_t size = 1 + opcodes.size_bytes() + operands.size_bytes();
 

@@ -9,7 +9,7 @@ module;
 #include <vector>
 #include <unordered_map>
 
-export module sba.util.container;
+export module sba.util:container;
 
 namespace SBA::Util {
 

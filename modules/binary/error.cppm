@@ -1,7 +1,7 @@
 module;
 #include <cstdint>
 
-export module sba.binary.error;
+export module sba.binary:error;
 
 export namespace SBA::Binary {
 
