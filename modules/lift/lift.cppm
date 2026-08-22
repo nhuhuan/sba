@@ -10,9 +10,9 @@ export module sba.lift;
 
 import sba.binary;
 import sba.ir;
-import :decoder;
-import :cache;
 import :encoder;
+export import :decoder;
+export import :cache;
 
 namespace SBA::Lift {
 

@@ -9,6 +9,8 @@ import :constant;
 
 export namespace SBA::IR {
 
+	class IRView;
+
 	struct IRStream {
 		SBA::Util::PVector<uint8_t,  (1ULL << INST_BITS)>  inst;
 		SBA::Util::PVector<uint32_t, (1ULL << IMM_BITS)>   imm32;
@@ -28,6 +30,20 @@ export namespace SBA::IR {
 					.llength_addr = 3
 				}
 			);
+		}
+
+		IRView operator[](Instruction i) const noexcept;
+
+		const Memory& memory(Operand op) const noexcept {
+			return mem[op.mem.index];
+		}
+
+		uint64_t immediate(Operand op) const noexcept {
+			return op.imm.wide ? imm64[op.imm.index] : imm32[op.imm.index];
+		}
+
+		uint32_t pc_relative(Operand op) const noexcept {
+			return pcrel[op.pcrel.index];
 		}
 	};
 

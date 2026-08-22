@@ -107,18 +107,17 @@ namespace SBA::Lift {
 		};
 	}
 
-	static inline constexpr uint8_t inst_header(
+	static inline constexpr uint8_t header(
 		InstructionType type,
 		uint8_t count,
 		uint8_t length) noexcept
 	{
-		uint8_t tag = (type == InstructionType::STORE)
-					? (count & 0x7)
-					: (((uint8_t)type & 0x7) | 0x8);
+		uint8_t tag = (type != InstructionType::STORE) ?
+					  ((uint8_t)type | 0x8) : (count & 0x7);
 		return (tag << 4) | (length & 0xf);
 	}
 
-	static inline uint64_t inst_hash(
+	static inline uint64_t hash(
 		uint8_t header,
 		std::span<const Operator> opcodes,
 		std::span<const Operand> operands) noexcept
@@ -147,10 +146,10 @@ namespace SBA::Lift {
 		IRStream& stream,
 		IRCache& cache) noexcept
 	{
-		uint8_t header = inst_header(type, (uint8_t)opcodes.size(), length);
+		uint8_t hdr = header(type, (uint8_t)opcodes.size(), length);
 
 		auto index = cache.inst.get_or_insert(
-			inst_hash(header, opcodes, operands),
+			hash(hdr, opcodes, operands),
 			[&]() -> std::optional<uint32_t> {
 				size_t size = 1 + opcodes.size_bytes() + operands.size_bytes();
 
@@ -159,7 +158,7 @@ namespace SBA::Lift {
 					return std::nullopt;
 
 				uint32_t offset = *index;
-				stream.inst[offset++] = header;
+				stream.inst[offset++] = hdr;
 
 				if (!opcodes.empty()) {
 					size_t bytes = opcodes.size_bytes();

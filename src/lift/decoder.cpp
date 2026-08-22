@@ -105,7 +105,7 @@ namespace SBA::Lift {
 		);
 
 		if (status == llvm::MCDisassembler::Success && size > 0)
-			return DecoderInstruction{
+			return DecoderInstruction {
 				.size = (uint8_t)size,
 				.inst = std::move(inst)
 			};

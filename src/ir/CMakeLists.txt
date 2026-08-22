@@ -9,6 +9,7 @@ target_sources(ir
 				${CMAKE_SOURCE_DIR}/modules/ir/constant.cppm
 				${CMAKE_SOURCE_DIR}/modules/ir/stream.cppm
 				${CMAKE_SOURCE_DIR}/modules/ir/semantics.cppm
+				${CMAKE_SOURCE_DIR}/modules/ir/view.cppm
 				${CMAKE_SOURCE_DIR}/modules/ir/ir.cppm
 )
 
