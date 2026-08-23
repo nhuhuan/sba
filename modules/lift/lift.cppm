@@ -19,7 +19,7 @@ namespace SBA::Lift {
 	using namespace SBA::IR;
 	inline constexpr size_t MAX_OPS_PER_INST = 5;
 
-	template <SBA::Binary::Arch Target>
+	template <SBA::Binary::Arch T>
 	std::optional<Instruction> lift_arch(
 		const DecoderInstruction& inst,
 		IRStream& stream,
@@ -27,7 +27,7 @@ namespace SBA::Lift {
 		const DecoderContext& dctx
 	) noexcept;
 
-	template <SBA::Binary::Arch Target>
+	template <SBA::Binary::Arch T>
 	inline Instruction lift_default(
 		const DecoderInstruction& inst,
 		IRStream& stream,
@@ -47,7 +47,7 @@ namespace SBA::Lift {
 		};
 
 		for (int i = 0; i < desc.getNumDefs(); ++i) {
-			auto dst = parse_register<Target>(
+			auto dst = parse_register<T>(
 				inst.inst.getOperand(i).getReg(),
 				dctx
 			);
@@ -56,7 +56,7 @@ namespace SBA::Lift {
 		}
 
 		for (auto reg : desc.implicit_defs()) {
-			auto dst = parse_register<Target>(reg, dctx);
+			auto dst = parse_register<T>(reg, dctx);
 			if (dst != NO_REGISTER)
 				add_clobber(dst);
 		}
@@ -78,15 +78,15 @@ namespace SBA::Lift {
 
 export namespace SBA::Lift {
 
-	template <SBA::Binary::Arch Target>
+	template <SBA::Binary::Arch T>
 	inline Instruction lift(
 		const DecoderInstruction& inst,
 		IRStream& stream,
 		IRCache& cache,
 		const DecoderContext& dctx)
 	{
-		auto op = lift_arch<Target>(inst, stream, cache, dctx);
-		return op ? *op : lift_default<Target>(inst, stream, cache, dctx);
+		auto op = lift_arch<T>(inst, stream, cache, dctx);
+		return op ? *op : lift_default<T>(inst, stream, cache, dctx);
 	}
 
 }

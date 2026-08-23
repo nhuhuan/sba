@@ -11,8 +11,7 @@ export namespace SBA::Lift {
 		SBA::Util::PMap<uint64_t, uint32_t> inst;
 		SBA::Util::PMap<uint32_t, uint32_t> imm32;
 		SBA::Util::PMap<uint64_t, uint32_t> imm64;
-		SBA::Util::PMap<uint32_t, uint32_t> pcrel;
-		SBA::Util::PMap<uint64_t, uint32_t> mem;
+		SBA::Util::PMap<uint64_t, uint32_t> aff;
 	};
 
 }

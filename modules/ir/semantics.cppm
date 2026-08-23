@@ -10,69 +10,60 @@ export namespace SBA::IR {
 
 	#define OPERATOR_LIST(OP) \
 		/* Arity 0 */ \
-		OP(CLOBBERED, 0, "clobbered", "clobbered") \
-		OP(UNDEF,     0, "undef",     "undefined") \
+		OP(CLOBBERED, 0, "clb",       "clobbered") \
+		OP(UNDEF,     0, "undef",     "undef") \
 		/* Arity 1 */ \
-		OP(VAL,       1, "val",       "exact value") \
-		OP(NEG,       1, "neg",       "negate") \
-		OP(NOT,       1, "not",       "not") \
-		OP(ABS,       1, "abs",       "absolute") \
-		OP(REV,       1, "rev",       "reverse") \
-		OP(CLZ,       1, "clz",       "count leading zeros") \
-		OP(CTZ,       1, "ctz",       "count trailing zeros") \
-		OP(CNT,       1, "cnt",       "count set bits") \
-		OP(ZEXT,      1, "zext",      "zero extend") \
-		OP(SEXT,      1, "sext",      "sign extend") \
-		OP(TRUNC,     1, "trunc",     "truncate") \
-		OP(FNEG,      1, "fneg",      "negate (float)") \
+		OP(VAL,       1, "val",       "a") \
+		OP(NEG,       1, "neg",       "-a") \
+		OP(NOT,       1, "not",       "~a") \
+		OP(ABS,       1, "abs",       "|a|") \
+		OP(REV,       1, "rev",       "reverse_bytes(a)") \
+		OP(CLZ,       1, "clz",       "count_leading_zeros(a)") \
+		OP(CTZ,       1, "ctz",       "count_trailing_zeros(a)") \
+		OP(CNT,       1, "cnt",       "count_set_bits(a)") \
+		OP(ZEXT,      1, "zext",      "zero_extend(a)") \
+		OP(SEXT,      1, "sext",      "sign_extend(a)") \
+		OP(TRUNC,     1, "trunc",     "truncate(a)") \
+		OP(FNEG,      1, "fneg",      "-a") \
 		/* Arity 2 */ \
-		OP(ADD,       2, "add",       "add") \
-		OP(FADD,      2, "fadd",      "add (float)") \
-		OP(SUB,       2, "sub",       "subtract") \
-		OP(FSUB,      2, "fsub",      "subtract (float)") \
-		OP(MUL,       2, "mul",       "multiply") \
-		OP(FMUL,      2, "fmul",      "multiply (float)") \
-		OP(MULH,      2, "mulh",      "multiply high") \
-		OP(UMULH,     2, "umulh",     "multiply high (unsigned)") \
-		OP(DIV,       2, "div",       "division") \
-		OP(FDIV,      2, "fdiv",      "division (float)") \
-		OP(UDIV,      2, "udiv",      "division (unsigned)") \
-		OP(MOD,       2, "mod",       "modulo") \
-		OP(UMOD,      2, "umod",      "modulo (unsigned)") \
-		OP(AND,       2, "and",       "and") \
-		OP(OR,        2, "or",        "or") \
-		OP(XOR,       2, "xor",       "xor") \
-		OP(SHL,       2, "shl",       "shift left") \
-		OP(SAR,       2, "sar",       "shift right") \
-		OP(SHR,       2, "shr",       "shift right (unsigned)") \
-		OP(MIN,       2, "min",       "minimum") \
-		OP(MAX,       2, "max",       "maximum") \
-		OP(ROL,       2, "rol",       "rotate left") \
-		OP(ROR,       2, "ror",       "rotate right") \
-		OP(DIST,      2, "dist",      "hamming distance") \
-		OP(CMP,       2, "cmp",       "compare") \
+		OP(ADD,       2, "add",       "a + b") \
+		OP(FADD,      2, "fadd",      "a + b") \
+		OP(SUB,       2, "sub",       "a - b") \
+		OP(FSUB,      2, "fsub",      "a - b") \
+		OP(MUL,       2, "mul",       "a * b") \
+		OP(FMUL,      2, "fmul",      "a * b") \
+		OP(MULH,      2, "mulh",      "high(a * b)") \
+		OP(UMULH,     2, "umulh",     "high_u(a * b)") \
+		OP(DIV,       2, "div",       "a / b") \
+		OP(FDIV,      2, "fdiv",      "a / b") \
+		OP(UDIV,      2, "udiv",      "a /u b") \
+		OP(MOD,       2, "mod",       "a % b") \
+		OP(UMOD,      2, "umod",      "a %u b") \
+		OP(AND,       2, "and",       "a & b") \
+		OP(OR,        2, "or",        "a | b") \
+		OP(XOR,       2, "xor",       "a ^ b") \
+		OP(SHL,       2, "shl",       "a << b") \
+		OP(SAR,       2, "sar",       "a >> b") \
+		OP(SHR,       2, "shr",       "a >>u b") \
+		OP(MIN,       2, "min",       "min(a, b)") \
+		OP(MAX,       2, "max",       "max(a, b)") \
+		OP(ROL,       2, "rol",       "rotate_left(a, b)") \
+		OP(ROR,       2, "ror",       "rotate_right(a, b)") \
+		OP(CMP,       2, "cmp",       "compare(a, b)") \
 		/* Arity 3 */ \
-		OP(CADD,      3, "cadd",      "add carrying") \
-		OP(MADD,      3, "madd",      "multiply add") \
-		OP(FMADD,     3, "fmadd",     "multiply add (float)") \
-		OP(CSUB,      3, "csub",      "subtract carrying") \
-		OP(MSUB,      3, "msub",      "multiply subtract") \
-		OP(FMSUB,     3, "fmsub",     "multiply subtract (float)") \
-		OP(FSHL,      3, "fshl",      "funnel shift left") \
-		OP(FSHR,      3, "fshr",      "funnel shift right") \
-		OP(BFI,       3, "bfi",       "bitfield insert") \
-		OP(BFX,       3, "bfx",       "bitfield extract") \
-		OP(CMPXCHG,   3, "cmpxchg",   "compare and exchange") \
-		OP(EQ,        3, "eq",        "equal") \
-		OP(NE,        3, "ne",        "not equal") \
-		OP(LT,        3, "lt",        "less than") \
-		OP(LTU,       3, "ltu",       "less than (unsigned)") \
-		OP(LE,        3, "le",        "less than or equal") \
-		OP(LEU,       3, "leu",       "less than or equal (unsigned)") \
-		OP(GT,        3, "gt",        "greater than") \
-		OP(GTU,       3, "gtu",       "greater than (unsigned)") \
-		OP(GE,        3, "ge",        "greater than or equal") \
-		OP(GEU,       3, "geu",       "greater than or equal (unsigned)")
+		OP(CADD,      3, "cadd",      "(a + b) + c") \
+		OP(CSUB,      3, "csub",      "(a - b) - c") \
+		OP(CAS,       3, "cas",       "cmpswap(a, b, c)") \
+		OP(EQ,        3, "eq",        "eq(a) ? b : c") \
+		OP(NE,        3, "ne",        "ne(a) ? b : c") \
+		OP(LT,        3, "lt",        "lt(a) ? b : c") \
+		OP(LTU,       3, "ltu",       "ltu(a) ? b : c") \
+		OP(LE,        3, "le",        "le(a) ? b : c") \
+		OP(LEU,       3, "leu",       "leu(a) ? b : c") \
+		OP(GT,        3, "gt",        "gt(a) ? b : c") \
+		OP(GTU,       3, "gtu",       "gtu(a) ? b : c") \
+		OP(GE,        3, "ge",        "ge(a) ? b : c") \
+		OP(GEU,       3, "geu",       "geu(a) ? b : c")
 
 	enum class Operator : uint8_t {
 		#define DEF_ENUM(name, ari, str, desc) name,
@@ -154,7 +145,6 @@ export namespace SBA::IR {
 				case Operator::MAX:			return T::max(a, b);
 				case Operator::ROL:			return T::rol(a, b);
 				case Operator::ROR:			return T::ror(a, b);
-				case Operator::DIST:		return T::dist(a, b);
 				case Operator::CMP:			return T::cmp(a, b);
 				default:					return T::undef();
 			}
@@ -165,16 +155,8 @@ export namespace SBA::IR {
 			auto&& c = std::get<2>(tuple);
 			switch (op) {
 				case Operator::CADD:		return T::addc(a, b, c);
-				case Operator::MADD:		return T::madd(a, b, c);
-				case Operator::FMADD:		return T::fmadd(a, b, c);
 				case Operator::CSUB:		return T::subc(a, b, c);
-				case Operator::MSUB:		return T::msub(a, b, c);
-				case Operator::FMSUB:		return T::fmsub(a, b, c);
-				case Operator::FSHL:		return T::fshl(a, b, c);
-				case Operator::FSHR:		return T::fshr(a, b, c);
-				case Operator::BFI:			return T::bfi(a, b, c);
-				case Operator::BFX:			return T::bfx(a, b, c);
-				case Operator::CMPXCHG:		return T::cmpxchg(a, b, c);
+				case Operator::CAS:			return T::cas(a, b, c);
 				case Operator::EQ:			return T::eq(a, b, c);
 				case Operator::NE:			return T::ne(a, b, c);
 				case Operator::LT:			return T::lt(a, b, c);

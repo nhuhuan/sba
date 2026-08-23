@@ -23,31 +23,30 @@ namespace SBA::Lift {
 	using namespace SBA::Arch::X86_64;
 
 	template <>
-	Operand parse_register<SBA::Binary::Arch::X86_64>(
+	Operand extract_register<SBA::Binary::Arch::X86_64>(
 		const std::string& name) noexcept
 	{
 		auto reg_name = name;
-		std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(),
-			[](unsigned char c) {
-				return (char)std::toupper(c);
-			}
+		std::transform(
+			reg_name.begin(),
+			reg_name.end(),
+			reg_name.begin(),
+			[](unsigned char c) {return (char)std::toupper(c);}
 		);
 
 		auto it = std::find_if(
 			register_map.begin(),
 			register_map.end(),
-			[&](const RegMap& e) {
-				return e.name == reg_name;
-			}
+			[&](const RegMap& e) {return e.name == reg_name;}
 		);
 
 		if (it != register_map.end())
 			return Operand {
 				.reg = {
 					.type = (uint32_t)OperandType::REGISTER,
-					.llength = it->llength,
 					.index = (uint32_t)it->base,
-					.offset = it->offset
+					.offset = it->offset,
+					.llength = it->llength
 				}
 			};
 
@@ -55,51 +54,40 @@ namespace SBA::Lift {
 	}
 
 	template <>
-	std::optional<Operand> parse_memory<SBA::Binary::Arch::X86_64>(
+	uint32_t extract_affine<SBA::Binary::Arch::X86_64>(
 		std::span<const llvm::MCOperand> ops,
 		uint8_t llength,
 		IRStream& stream,
 		IRCache& cache,
 		const DecoderContext& dctx) noexcept
 	{
-		auto base = parse_register<SBA::Binary::Arch::X86_64>(
-			ops[0].getReg(),
-			dctx
+		auto b = stream.reg(
+			parse_register<SBA::Binary::Arch::X86_64>(ops[0], dctx)
 		);
-		auto index = parse_register<SBA::Binary::Arch::X86_64>(
-			ops[2].getReg(),
-			dctx
+		auto i = stream.reg(
+			parse_register<SBA::Binary::Arch::X86_64>(ops[2], dctx)
 		);
-		auto segment = parse_register<SBA::Binary::Arch::X86_64>(
-			ops[4].getReg(),
-			dctx
+		auto s = stream.reg(
+			parse_register<SBA::Binary::Arch::X86_64>(ops[4], dctx)
 		);
 
-		Memory mem {
+		Affine aff {
 			.displacement = (int32_t)ops[3].getImm(),
-			.base = (uint8_t)base.reg.index,
-			.index = (uint8_t)index.reg.index,
+			.base = (uint8_t)b.index,
+			.index = (uint8_t)i.index,
 			.shift = (uint8_t)std::countr_zero((unsigned)ops[1].getImm()),
-			.extra = (uint8_t)segment.reg.index,
+			.extra = (uint8_t)s.index,
 			.llength = llength,
-			.llength_addr = (uint8_t)std::max(
-				base.reg.llength,
-				index.reg.llength
-			)
+			.llength_addr = (uint8_t)std::max(b.llength, i.llength)
 		};
 
-		auto m_index = cache.mem.get_or_insert(
-			std::bit_cast<uint64_t>(mem),
-			[&] {return stream.mem.push_back(mem);}
+		auto index = cache.aff.get_or_insert(
+			std::bit_cast<uint64_t>(aff),
+			[&] {return stream.aff.push_back(aff);}
 		);
-		assert(m_index);
+		assert(index);
 
-		return Operand {
-			.mem = {
-				.type = (uint32_t)OperandType::MEMORY,
-				.index = (uint32_t)*m_index
-			}
-		};
+		return *index;
 	}
 
 	template <>

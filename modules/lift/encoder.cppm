@@ -21,18 +21,54 @@ namespace SBA::Lift {
 
 	using namespace SBA::IR;
 
-	template <SBA::Binary::Arch Target>
-	std::optional<Operand> parse_memory(
+	template <SBA::Binary::Arch T>
+	Operand extract_register(const std::string& name) noexcept;
+
+	template <SBA::Binary::Arch T>
+	uint32_t extract_affine(
 		std::span<const llvm::MCOperand> ops,
 		uint8_t llength,
 		IRStream& stream,
 		IRCache& cache,
 		const DecoderContext& dctx) noexcept;
 
-	template <SBA::Binary::Arch Target>
-	Operand parse_register(const std::string& name) noexcept;
+}
 
-	template <SBA::Binary::Arch Target>
+namespace SBA::Lift {
+
+	template <SBA::Binary::Arch T>
+	inline Operand parse_affine(
+		std::span<const llvm::MCOperand> ops,
+		uint8_t llength,
+		IRStream& stream,
+		IRCache& cache,
+		const DecoderContext& dctx) noexcept
+	{
+		return Operand {
+			.aff = {
+				.type = (uint32_t)OperandType::AFFINE,
+				.index = extract_affine<T>(ops, llength, stream, cache, dctx)
+			}
+		};
+	}
+
+	template <SBA::Binary::Arch T>
+	inline Operand parse_memory(
+		std::span<const llvm::MCOperand> ops,
+		uint8_t llength,
+		IRStream& stream,
+		IRCache& cache,
+		const DecoderContext& dctx) noexcept
+	{
+		return Operand {
+			.mem = {
+				.type = (uint32_t)OperandType::MEMORY,
+				.index = extract_affine<T>(ops, llength, stream, cache, dctx)
+			}
+		};
+	}
+
+	template <SBA::Binary::Arch T>
 	inline Operand parse_register(
 		uint32_t reg_id,
 		const DecoderContext& dctx) noexcept
@@ -41,11 +77,19 @@ namespace SBA::Lift {
 			auto num_regs = dctx.register_info->getNumRegs();
 			std::vector<Operand> res(num_regs, NO_REGISTER);
 			for (int i = 1; i < num_regs; ++i)
-				res[i] = parse_register<Target>(dctx.register_info->getName(i));
+				res[i] = extract_register<T>(dctx.register_info->getName(i));
 			return res;
 		}();
 
 		return reg_id ? reg_map[reg_id] : NO_REGISTER;
+	}
+
+	template <SBA::Binary::Arch T>
+	inline Operand parse_register(
+		const llvm::MCOperand& op,
+		const DecoderContext& dctx) noexcept
+	{
+		return parse_register<T>(op.getReg(), dctx);
 	}
 
 	inline Operand parse_immediate(
@@ -86,27 +130,6 @@ namespace SBA::Lift {
 		};
 	}
 
-	inline Operand parse_pcrel(
-		const llvm::MCOperand& op,
-		IRStream& stream,
-		IRCache& cache,
-		const DecoderContext& dctx) noexcept
-	{
-		uint32_t imm = op.getImm();
-		auto index = cache.pcrel.get_or_insert(
-			imm,
-			[&] {return stream.pcrel.push_back(imm);}
-		);
-		assert(index);
-
-		return Operand {
-			.pcrel = {
-				.type = (uint32_t)OperandType::PC_RELATIVE,
-				.index = (uint32_t)*index
-			}
-		};
-	}
-
 	static inline constexpr uint8_t header(
 		InstructionType type,
 		uint8_t count,
@@ -122,20 +145,12 @@ namespace SBA::Lift {
 		std::span<const Operator> opcodes,
 		std::span<const Operand> operands) noexcept
 	{
-		uint64_t seed = SBA::Util::wyhash(&header, sizeof(header), 0);
+		uint64_t s = SBA::Util::wyhash(&header, sizeof(header), 0);
 		if (!opcodes.empty())
-			seed = SBA::Util::wyhash(
-				opcodes.data(),
-				opcodes.size_bytes(),
-				seed
-			);
+			s = SBA::Util::wyhash(opcodes.data(), opcodes.size_bytes(), s);
 		if (!operands.empty())
-			seed = SBA::Util::wyhash(
-				operands.data(),
-				operands.size_bytes(),
-				seed
-			);
-		return seed;
+			s = SBA::Util::wyhash(operands.data(), operands.size_bytes(), s);
+		return s;
 	}
 
 	inline Instruction serialize_inst(
