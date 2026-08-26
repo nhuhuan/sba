@@ -20,7 +20,7 @@ export namespace SBA::IR {
 
 	class IRView {
 	private:
-		const IRStream& stream_;
+		const Stream& stream_;
 		Instruction inst_;
 
 		uint8_t count() const noexcept {
@@ -29,13 +29,13 @@ export namespace SBA::IR {
 		}
 
 	public:
-		IRView(const IRStream& stream, Instruction inst) noexcept
+		IRView(const Stream& stream, Instruction inst) noexcept
 			: stream_(stream), inst_(inst) {}
 
-		InstructionType type() const noexcept {
+		Instruction::Type type() const noexcept {
 			uint8_t tag = stream_.inst[inst_.index] >> 4;
 			return (tag & 0x8) ?
-				   (InstructionType)(tag & 0x7) : InstructionType::STORE;
+				   (Instruction::Type)(tag & 0x7) : Instruction::Type::STORE;
 		}
 
 		uint8_t length() const noexcept {
@@ -93,7 +93,7 @@ export namespace SBA::IR {
 		}
 	};
 
-	inline IRView IRStream::operator[](Instruction i) const noexcept {
+	inline IRView Stream::operator[](Instruction i) const noexcept {
 		return IRView{*this, i};
 	}
 

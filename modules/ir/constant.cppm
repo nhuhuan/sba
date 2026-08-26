@@ -8,8 +8,8 @@ import :syntax;
 export namespace SBA::IR {
 
 	inline constexpr Operand NO_REGISTER = Operand {
-		.reg = {
-			.type = (uint32_t)OperandType::REGISTER,
+		.r = {
+			.type = (uint32_t)Operand::Type::REGISTER,
 			.index = 0,
 			.offset = 0,
 			.llength = 0
@@ -17,8 +17,8 @@ export namespace SBA::IR {
 	};
 
 	inline constexpr Operand ANY_REGISTER = Operand {
-		.reg = {
-			.type = (uint32_t)OperandType::REGISTER,
+		.r = {
+			.type = (uint32_t)Operand::Type::REGISTER,
 			.index = 1,
 			.offset = 0,
 			.llength = 0
@@ -26,8 +26,8 @@ export namespace SBA::IR {
 	};
 
 	inline constexpr Operand ANY_MEMORY = Operand {
-		.mem = {
-			.type = (uint32_t)OperandType::MEMORY,
+		.m = {
+			.type = (uint32_t)Operand::Type::MEMORY,
 			.index = 0
 		}
 	};

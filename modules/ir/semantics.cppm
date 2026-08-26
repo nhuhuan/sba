@@ -171,4 +171,14 @@ export namespace SBA::IR {
 			}
 		}
 	}
+
+	inline constexpr size_t MAX_ARITY = []() consteval noexcept {
+		size_t res = 0;
+		#define EVAL_ARITY(name, ari, str, desc) \
+			res = std::max(res, (size_t)ari);
+		OPERATOR_LIST(EVAL_ARITY)
+		#undef EVAL_ARITY
+		return res;
+	}();
+
 }

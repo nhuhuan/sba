@@ -13,12 +13,6 @@ export namespace SBA::Binary {
 		BIG
 	};
 
-	enum class Arch : uint8_t {
-		X86_64,
-		AARCH64,
-		UNKNOWN
-	};
-
 	enum class OS : uint8_t {
 		LINUX,
 		WINDOWS,

@@ -130,7 +130,7 @@ namespace SBA::Binary {
 				scope = SymbolScope::PUBLIC;	break;
 		}
 
-		return Symbol{
+		return Symbol {
 			*exp_addr,
 			sym.getSize(),
 			type,
@@ -250,18 +250,18 @@ namespace SBA::Binary {
 		return {};
 	}
 
-	static void parse_arch(const llvm::object::ObjectFile* obj, Arch& arch)
+	static void parse_arch(const llvm::object::ObjectFile* obj, Target& arch)
 	{
 		auto llvm_arch = obj->getArch();
 		switch (llvm_arch) {
 			case llvm::Triple::x86_64:
-				arch = Arch::X86_64;
+				arch = Target::X86_64;
 				break;
 			case llvm::Triple::aarch64:
-				arch = Arch::AARCH64;
+				arch = Target::AArch64;
 				break;
 			default:
-				arch = Arch::UNKNOWN;
+				arch = Target::Unknown;
 				break;
 		}
 	}
@@ -297,7 +297,7 @@ namespace SBA::Binary {
 	template <typename ELFT>
 	static std::expected<void, Error> parse_elf(
 		llvm::object::ELFObjectFile<ELFT>* object,
-		Arch& arch,
+		Target& arch,
 		OS& os,
 		Endian& endian,
 		std::optional<uint64_t>& entry,
@@ -331,7 +331,7 @@ namespace SBA::Binary {
 
 	std::expected<void, Error> parse_elf(
 		llvm::object::ObjectFile* object,
-		Arch& arch,
+		Target& arch,
 		OS& os,
 		Endian& endian,
 		std::optional<uint64_t>& entry,

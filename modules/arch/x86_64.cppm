@@ -3,7 +3,7 @@ module;
 #include <cstdint>
 #include <string>
 
-export module sba.arch.x86_64;
+export module sba.arch:x86_64;
 
 export namespace SBA::Arch::X86_64 {
 
@@ -341,16 +341,16 @@ export namespace SBA::Arch::X86_64 {
 		REG("YMM31",  ZMM31,  0, 5) \
 		REG("ZMM31",  ZMM31,  0, 6)
 
-	struct RegMap {
+	struct RegEntry {
 		std::string name;
 		Reg base;
 		uint8_t offset;
 		uint8_t llength;
 	};
 
-	inline constexpr std::array register_map = {
+	inline constexpr std::array registers = {
 		#define DEF_SUBREG(name, base, offset, llength) \
-			RegMap{name, Reg::base, offset, llength},
+			RegEntry{name, Reg::base, offset, llength},
 		REGISTER_MAP(DEF_SUBREG)
 		#undef DEF_SUBREG
 	};

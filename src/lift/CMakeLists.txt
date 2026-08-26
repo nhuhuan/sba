@@ -6,8 +6,11 @@ target_sources(lift
 			BASE_DIRS ${CMAKE_SOURCE_DIR}/modules
 			FILES
 				${CMAKE_SOURCE_DIR}/modules/lift/cache.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/target.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/decoder.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/encoder.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/parser.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/fallback.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/lift.cppm
 	PRIVATE
 		decoder.cpp

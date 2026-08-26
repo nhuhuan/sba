@@ -11,32 +11,32 @@ export namespace SBA::IR {
 
 	class IRView;
 
-	struct IRStream {
+	struct Stream {
 		SBA::Util::PVector<uint8_t,  (1ULL << INST_BITS)> inst;
-		SBA::Util::PVector<uint32_t, (1ULL << IMM_BITS)>  imm32;
-		SBA::Util::PVector<uint64_t, (1ULL << IMM_BITS)>  imm64;
-		SBA::Util::PVector<Affine,   (1ULL << AFF_BITS)>  aff;
+		SBA::Util::PVector<uint32_t, (1ULL << IMM_BITS)>  i32;
+		SBA::Util::PVector<uint64_t, (1ULL << IMM_BITS)>  i64;
+		SBA::Util::PVector<Affine,   (1ULL << AFF_BITS)>  a;
 
 		IRView operator[](Instruction i) const noexcept;
 
 		Register reg(Operand op) const noexcept {
-			return op.reg;
+			return op.r;
 		}
 
 		uint64_t immediate(Operand op) const noexcept {
-			return op.imm.wide ? imm64[op.imm.index] : imm32[op.imm.index];
+			return op.i.wide ? i64[op.i.index] : i32[op.i.index];
 		}
 
 		Affine memory(Operand op) const noexcept {
-			return aff[op.mem.index];
+			return a[op.m.index];
 		}
 
 		Affine affine(Operand op) const noexcept {
-			return aff[op.aff.index];
+			return a[op.a.index];
 		}
 
-		IRStream() {
-			aff.push_back(
+		Stream() {
+			a.push_back(
 				Affine {
 					.displacement = 0,
 					.base = (uint8_t)reg(ANY_REGISTER).index,

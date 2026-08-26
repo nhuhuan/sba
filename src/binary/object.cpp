@@ -96,18 +96,18 @@ namespace SBA::Binary {
 		return {};
 	}
 
-	const char* Object::triple(Arch arch, OS os)
+	const char* Object::triple() const
 	{
-		switch (arch) {
-			case Arch::X86_64:
-				switch (os) {
+		switch (arch_) {
+			case Target::X86_64:
+				switch (os_) {
 					case OS::LINUX:   return "x86_64-pc-linux-gnu";
 					case OS::WINDOWS: return "x86_64-w64-windows-gnu";
 					case OS::DARWIN:  return "x86_64-apple-darwin";
 					default:          return "";
 				}
-			case Arch::AARCH64:
-				switch (os) {
+			case Target::AArch64:
+				switch (os_) {
 					case OS::LINUX:   return "aarch64-unknown-linux-gnu";
 					case OS::WINDOWS: return "aarch64-pc-win32-coff";
 					case OS::DARWIN:  return "aarch64-apple-darwin";

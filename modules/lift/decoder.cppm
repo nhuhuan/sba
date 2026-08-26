@@ -5,13 +5,8 @@ module;
 #include <llvm/MC/MCInst.h>
 
 namespace llvm {
-	class MCRegisterInfo;
-	class MCInstrInfo;
-	class MCSubtargetInfo;
-	class MCAsmInfo;
 	class MCContext;
 	class MCDisassembler;
-	class Target;
 }
 
 export module sba.lift:decoder;
@@ -20,33 +15,21 @@ import sba.binary;
 
 export namespace SBA::Lift {
 
-	struct DecoderInstruction {
-		uint8_t size = 0;
-		llvm::MCInst inst;
-	};
+	class MCInst : public llvm::MCInst {
+	public:
+		uint8_t length() const noexcept { return len_; }
+		void length(uint8_t len) noexcept { len_ = len; }
 
-	struct DecoderContext {
-		const char* triple = nullptr;
-		const llvm::Target* target = nullptr;
-		std::unique_ptr<const llvm::MCRegisterInfo> register_info;
-		std::unique_ptr<const llvm::MCInstrInfo> instruction_info;
-		std::unique_ptr<const llvm::MCSubtargetInfo> cpu_info;
-		std::unique_ptr<const llvm::MCAsmInfo> assembly_info;
-
-		DecoderContext(
-			SBA::Binary::Arch arch,
-			SBA::Binary::OS os,
-			SBA::Binary::Endian endian
-		);
-		~DecoderContext();
+	private:
+		uint8_t len_ = 0;
 	};
 
 	class Decoder {
 	public:
-		Decoder(const DecoderContext& dcontext);
+		Decoder(const SBA::Binary::Object& object);
 		~Decoder();
 
-		std::optional<DecoderInstruction> decode(
+		std::optional<MCInst> decode(
 			uint64_t address,
 			std::span<const uint8_t> bytes
 		) const;

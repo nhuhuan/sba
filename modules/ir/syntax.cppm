@@ -11,22 +11,6 @@ export namespace SBA::IR {
 	inline constexpr size_t IMM_BITS  = 29;
 	inline constexpr size_t AFF_BITS  = 30;
 
-	enum class InstructionType : uint8_t {
-		STORE,
-		SYSCALL,
-		FENCE,
-		TRAP,
-		HALT,
-		NOP
-	};
-
-	enum class OperandType : uint8_t {
-		REGISTER,
-		IMMEDIATE,
-		MEMORY,
-		AFFINE
-	};
-
 	struct Register {
 		uint32_t type    : 2;
 		uint32_t index   : 8;
@@ -49,33 +33,34 @@ export namespace SBA::IR {
 		constexpr bool operator==(const Affine&) const noexcept = default;
 	};
 
-	struct Instruction {
-		uint32_t index : INST_BITS;
-
-		constexpr bool operator==(const Instruction&) const noexcept = default;
-	};
-
 	union Operand {
-		Register reg;
+		enum class Type : uint8_t {
+			REGISTER,
+			IMMEDIATE,
+			MEMORY,
+			AFFINE
+		};
+
+		Register r;
 
 		struct {
 			uint32_t type  : 2;
 			uint32_t wide  : 1;
 			uint32_t index : IMM_BITS;
-		} imm;
+		} i;
 
 		struct {
 			uint32_t type  : 2;
 			uint32_t index : AFF_BITS;
-		} mem;
+		} m;
 
 		struct {
 			uint32_t type  : 2;
 			uint32_t index : AFF_BITS;
-		} aff;
+		} a;
 
-		constexpr OperandType type() const noexcept {
-			return (OperandType)reg.type;
+		constexpr Type type() const noexcept {
+			return (Type)r.type;
 		}
 
 		constexpr explicit operator uint32_t() const noexcept {
@@ -85,6 +70,21 @@ export namespace SBA::IR {
 		constexpr bool operator==(Operand other) const noexcept {
 			return (uint32_t)*this == (uint32_t)other;
 		}
+	};
+
+	struct Instruction {
+		enum class Type : uint8_t {
+			STORE,
+			SYSCALL,
+			FENCE,
+			TRAP,
+			HALT,
+			NOP
+		};
+
+		uint32_t index : INST_BITS;
+
+		constexpr bool operator==(const Instruction&) const noexcept = default;
 	};
 
 }

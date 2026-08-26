@@ -19,6 +19,8 @@ target_sources(binary
 target_include_directories(binary PRIVATE ${LLVM_INCLUDE_DIRS})
 target_compile_definitions(binary PRIVATE ${LLVM_DEFINITIONS})
 target_link_libraries(binary
+	PUBLIC
+		arch
 	PRIVATE
 		${llvm_libs}
 )
