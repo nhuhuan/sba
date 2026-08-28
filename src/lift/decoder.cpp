@@ -20,7 +20,6 @@ module sba.lift;
 import sba.arch;
 import sba.binary;
 import :decoder;
-import :encoder;
 import :target;
 import :parser;
 
@@ -59,10 +58,10 @@ namespace SBA::Lift {
 
 			auto num_regs = info_reg<T>->getNumRegs();
 			llvm_registers<T>.assign(num_regs, NO_REGISTER);
-			for (unsigned i = 1; i < num_regs; ++i)
-				llvm_registers<T>[i] = encode_register(
-					extract_register<T>(info_reg<T>->getName(i))
-				);
+			for (size_t i = 1; i < num_regs; ++i)
+				llvm_registers<T>[i] = Operand {
+					.r = extract_r<T>(info_reg<T>->getName(i))
+				};
 		});
 	}
 
@@ -110,14 +109,14 @@ namespace SBA::Lift {
 
 	Decoder::~Decoder() = default;
 
-	std::optional<MCInst> Decoder::decode(
+	std::optional<MCInstruction> Decoder::decode(
 		uint64_t address,
 		std::span<const uint8_t> bytes) const
 	{
 		if (!disassembler)
 			return std::nullopt;
 
-		MCInst result;
+		MCInstruction result;
 		uint64_t length = 0;
 
 		auto status = disassembler->getInstruction(

@@ -6,9 +6,8 @@ module;
 export module sba.ir:view;
 
 import :syntax;
-import :constant;
 import :semantics;
-import :stream;
+import :context;
 
 export namespace SBA::IR {
 
@@ -20,26 +19,27 @@ export namespace SBA::IR {
 
 	class IRView {
 	private:
-		const Stream& stream_;
+		const Context& ctx_;
 		Instruction inst_;
 
-		uint8_t count() const noexcept {
-			uint8_t tag = stream_.inst[inst_.index] >> 4;
-			return (tag & 0x8) ? 0 : (tag & 0x7);
+		InstructionTag tag() const noexcept {
+			return InstructionTag(ctx_.inst[inst_.index]);
 		}
 
 	public:
-		IRView(const Stream& stream, Instruction inst) noexcept
-			: stream_(stream), inst_(inst) {}
+		IRView(const Context& ctx, Instruction inst) noexcept
+			: ctx_(ctx), inst_(inst) {}
 
 		Instruction::Type type() const noexcept {
-			uint8_t tag = stream_.inst[inst_.index] >> 4;
-			return (tag & 0x8) ?
-				   (Instruction::Type)(tag & 0x7) : Instruction::Type::STORE;
+			return tag().type();
+		}
+
+		uint8_t count() const noexcept {
+			return tag().count();
 		}
 
 		uint8_t length() const noexcept {
-			return stream_.inst[inst_.index] & 0xf;
+			return tag().length();
 		}
 
 		struct Iterator {
@@ -73,8 +73,8 @@ export namespace SBA::IR {
 
 			if (uint8_t cnt = count()) {
 				uint32_t base = inst_.index + 1;
-				opcode_ptr = (const Operator*)(&stream_.inst[base]);
-				operand_ptr = (const Operand*)(&stream_.inst[base + cnt]);
+				opcode_ptr = (const Operator*)(&ctx_.inst[base]);
+				operand_ptr = (const Operand*)(&ctx_.inst[base + cnt]);
 			}
 
 			return Iterator{
@@ -93,7 +93,7 @@ export namespace SBA::IR {
 		}
 	};
 
-	inline IRView Stream::operator[](Instruction i) const noexcept {
+	inline IRView Context::operator[](Instruction i) const noexcept {
 		return IRView{*this, i};
 	}
 

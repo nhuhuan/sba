@@ -2,29 +2,24 @@ module;
 #include <bit>
 #include <cstdint>
 #include <string>
-#include <optional>
 #include <algorithm>
 #include <cctype>
-#include <span>
-#include <cassert>
 #include <llvm/MC/MCInst.h>
 
 module sba.lift;
 
 import sba.arch;
 import sba.ir;
-import :decoder;
-import :cache;
-import :target;
 import :parser;
 
 namespace SBA::Lift {
 
 	using namespace SBA::IR;
 	using namespace SBA::Arch::X86_64;
+	using SBA::Arch::Target;
 
 	template <>
-	Register extract_register<SBA::Arch::Target::X86_64>(
+	Register extract_r<Target::X86_64>(
 		const std::string& name) noexcept
 	{
 		auto reg_name = name;
@@ -53,14 +48,14 @@ namespace SBA::Lift {
 	}
 
 	template <>
-	Affine extract_affine<SBA::Arch::Target::X86_64>(
+	Affine extract_a<Target::X86_64>(
 		const llvm::MCOperand& op,
 		uint8_t llength) noexcept
 	{
 		const auto* ops = &op;
-		auto b = parse_register<SBA::Arch::Target::X86_64>(ops[0]).r;
-		auto i = parse_register<SBA::Arch::Target::X86_64>(ops[2]).r;
-		auto s = parse_register<SBA::Arch::Target::X86_64>(ops[4]).r;
+		auto b = parse_r<Target::X86_64>(ops[0]).r;
+		auto i = parse_r<Target::X86_64>(ops[2]).r;
+		auto s = parse_r<Target::X86_64>(ops[4]).r;
 
 		return Affine {
 			.displacement = (int32_t)ops[3].getImm(),
@@ -71,15 +66,6 @@ namespace SBA::Lift {
 			.llength      = llength,
 			.llength_addr = (uint8_t)std::max(b.llength, i.llength)
 		};
-	}
-
-	template <>
-	std::optional<Instruction> lift_target<SBA::Arch::Target::X86_64>(
-		const MCInst& inst,
-		Stream& stream,
-		Cache& cache) noexcept
-	{
-		return std::nullopt;
 	}
 
 }

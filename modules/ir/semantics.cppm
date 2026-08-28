@@ -181,4 +181,7 @@ export namespace SBA::IR {
 		return res;
 	}();
 
+	inline constexpr size_t MAX_OPERATIONS = 7;
+	inline constexpr size_t MAX_OPERANDS = MAX_OPERATIONS * (1 + MAX_ARITY);
+
 }

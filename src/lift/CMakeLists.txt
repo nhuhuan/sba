@@ -8,13 +8,14 @@ target_sources(lift
 				${CMAKE_SOURCE_DIR}/modules/lift/cache.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/target.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/decoder.cppm
-				${CMAKE_SOURCE_DIR}/modules/lift/encoder.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/parser.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/emit.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/fallback.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/lift.cppm
 	PRIVATE
 		decoder.cpp
-		x86_64.cpp
+		x86_64/extract.cpp
+		x86_64/lift.cpp
 )
 
 target_link_libraries(lift

@@ -8,7 +8,6 @@ export module sba.lift:parser;
 import sba.arch;
 import sba.ir;
 import :cache;
-import :encoder;
 import :target;
 
 namespace SBA::Lift {
@@ -17,10 +16,10 @@ namespace SBA::Lift {
 	using SBA::Arch::Target;
 
 	template <Target T>
-	Register extract_register(const std::string& name) noexcept;
+	Register extract_r(const std::string& name) noexcept;
 
 	template <Target T>
-	Affine extract_affine(
+	Affine extract_a(
 		const llvm::MCOperand& op,
 		uint8_t llength) noexcept;
 
@@ -29,41 +28,41 @@ namespace SBA::Lift {
 namespace SBA::Lift {
 
 	template <Target T>
-	inline Operand parse_register(uint32_t reg_id) noexcept {
+	inline Operand parse_r(uint32_t reg_id) noexcept {
 		return llvm_registers<T>[reg_id];
 	}
 
 	template <Target T>
-	inline Operand parse_register(const llvm::MCOperand& op) noexcept {
-		return parse_register<T>(op.getReg());
+	inline Operand parse_r(const llvm::MCOperand& op) noexcept {
+		return parse_r<T>(op.getReg());
 	}
 
-	inline Operand parse_immediate(
-		const llvm::MCOperand& op,
-		Stream& stream,
-		Cache& cache) noexcept
+	inline Operand parse_i(
+		Context& ctx,
+		Cache& cache,
+		const llvm::MCOperand& op) noexcept
 	{
-		return encode_immediate(op.getImm(), stream, cache);
-	}
-
-	template <Target T>
-	inline Operand parse_affine(
-		const llvm::MCOperand& op,
-		uint8_t llength,
-		Stream& stream,
-		Cache& cache) noexcept
-	{
-		return encode_affine(extract_affine<T>(op, llength), stream, cache);
+		return ctx.encode(cache, op.getImm());
 	}
 
 	template <Target T>
-	inline Operand parse_memory(
+	inline Operand parse_a(
+		Context& ctx,
+		Cache& cache,
 		const llvm::MCOperand& op,
-		uint8_t llength,
-		Stream& stream,
-		Cache& cache) noexcept
+		uint8_t llength) noexcept
 	{
-		return encode_memory(extract_affine<T>(op, llength), stream, cache);
+		return ctx.encode(cache, extract_a<T>(op, llength), false);
+	}
+
+	template <Target T>
+	inline Operand parse_m(
+		Context& ctx,
+		Cache& cache,
+		const llvm::MCOperand& op,
+		uint8_t llength) noexcept
+	{
+		return ctx.encode(cache, extract_a<T>(op, llength));
 	}
 
 }

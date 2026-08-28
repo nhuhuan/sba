@@ -15,7 +15,7 @@ import sba.binary;
 
 export namespace SBA::Lift {
 
-	class MCInst : public llvm::MCInst {
+	class MCInstruction : public llvm::MCInst {
 	public:
 		uint8_t length() const noexcept { return len_; }
 		void length(uint8_t len) noexcept { len_ = len; }
@@ -29,7 +29,7 @@ export namespace SBA::Lift {
 		Decoder(const SBA::Binary::Object& object);
 		~Decoder();
 
-		std::optional<MCInst> decode(
+		std::optional<MCInstruction> decode(
 			uint64_t address,
 			std::span<const uint8_t> bytes
 		) const;
