@@ -12,6 +12,7 @@ target_sources(lift
 				${CMAKE_SOURCE_DIR}/modules/lift/emit.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/fallback.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/lift.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/x86_64/pattern.cppm
 	PRIVATE
 		decoder.cpp
 		x86_64/extract.cpp

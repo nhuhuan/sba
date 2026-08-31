@@ -35,7 +35,7 @@ namespace SBA::Binary {
 		return nullptr;
 	}
 
-	std::expected<void, Error> Object::load(const std::string& path)
+	std::expected<void, Error> Object::load(std::string_view path)
 	{
 		auto bin = llvm::object::createBinary(path);
 		if (!bin) {

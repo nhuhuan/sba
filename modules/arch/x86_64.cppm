@@ -1,13 +1,17 @@
 module;
 #include <array>
 #include <cstdint>
-#include <string>
+#include <string_view>
 
 export module sba.arch:x86_64;
 
 export namespace SBA::Arch::X86_64 {
 
 	#define REGISTER_LIST(REG) \
+		REG(RIP,    8) \
+		REG(RSP,    8) \
+		REG(RBP,    8) \
+		REG(RFLAGS, 8) \
 		REG(CS,     2) \
 		REG(DS,     2) \
 		REG(SS,     2) \
@@ -20,8 +24,6 @@ export namespace SBA::Arch::X86_64 {
 		REG(RDX,    8) \
 		REG(RSI,    8) \
 		REG(RDI,    8) \
-		REG(RBP,    8) \
-		REG(RSP,    8) \
 		REG(R8,     8) \
 		REG(R9,     8) \
 		REG(R10,    8) \
@@ -30,8 +32,6 @@ export namespace SBA::Arch::X86_64 {
 		REG(R13,    8) \
 		REG(R14,    8) \
 		REG(R15,    8) \
-		REG(RIP,    8) \
-		REG(RFLAGS, 8) \
 		REG(CR0,    8) \
 		REG(CR2,    8) \
 		REG(CR3,    8) \
@@ -100,26 +100,32 @@ export namespace SBA::Arch::X86_64 {
 		REG(K7,     8)
 
 	enum class Reg : uint8_t {
-		NONE = 0,
-		ANY = 1,
-		#define DEF_REG_ENUM(name, size) name,
+		NONE,
+		ANY,
+		TMP1,
+		TMP2,
+
+		#define DEF_REG_ENUM(name, length) name,
 		REGISTER_LIST(DEF_REG_ENUM)
 		#undef DEF_REG_ENUM
+
+		PC    = RIP,
+		SP    = RSP,
+		FP    = RBP,
+		FLAGS = RFLAGS
 	};
 
 	constexpr uint16_t length(Reg r) noexcept {
 		switch (r) {
-			#define DEF_REG_LEN(name, size) case Reg::name: return size;
+			case Reg::TMP1:
+			case Reg::TMP2:
+				return 8;
+			#define DEF_REG_LEN(name, length) case Reg::name: return length;
 			REGISTER_LIST(DEF_REG_LEN)
 			#undef DEF_REG_LEN
 			default: return 0;
 		}
 	}
-
-	constexpr Reg program_counter = Reg::RIP;
-	constexpr Reg stack_pointer   = Reg::RSP;
-	constexpr Reg frame_pointer   = Reg::RBP;
-	constexpr Reg status_flags    = Reg::RFLAGS;
 
 	#define REGISTER_MAP(REG) \
 		REG("AH",     RAX,    1, 0) \
@@ -342,7 +348,7 @@ export namespace SBA::Arch::X86_64 {
 		REG("ZMM31",  ZMM31,  0, 6)
 
 	struct RegEntry {
-		std::string name;
+		std::string_view name;
 		Reg base;
 		uint8_t offset;
 		uint8_t llength;

@@ -17,7 +17,7 @@ export namespace SBA::IR {
 		std::span<const Operand> src;
 	};
 
-	class IRView {
+	class View {
 	private:
 		const Context& ctx_;
 		Instruction inst_;
@@ -27,7 +27,7 @@ export namespace SBA::IR {
 		}
 
 	public:
-		IRView(const Context& ctx, Instruction inst) noexcept
+		View(const Context& ctx, Instruction inst) noexcept
 			: ctx_(ctx), inst_(inst) {}
 
 		Instruction::Type type() const noexcept {
@@ -93,8 +93,8 @@ export namespace SBA::IR {
 		}
 	};
 
-	inline IRView Context::operator[](Instruction i) const noexcept {
-		return IRView{*this, i};
+	inline View Context::operator[](Instruction i) const noexcept {
+		return View{*this, i};
 	}
 
 }

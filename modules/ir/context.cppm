@@ -47,7 +47,7 @@ export namespace SBA::IR {
 		}
 	};
 
-	class IRView;
+	class View;
 
 	struct Context {
 		SBA::Util::PVector<uint8_t,  (1ULL << INST_BITS)> inst;
@@ -55,10 +55,9 @@ export namespace SBA::IR {
 		SBA::Util::PVector<uint64_t, (1ULL << IMM_BITS)>  i64;
 		SBA::Util::PVector<Affine,   (1ULL << AFF_BITS)>  aff;
 
-		IRView operator[](Instruction i) const noexcept;
+		View operator[](Instruction i) const noexcept;
 
 		Register r(Operand op) const noexcept { return op.r; }
-		Affine   m(Operand op) const noexcept { return aff[op.m.index]; }
 		Affine   a(Operand op) const noexcept { return aff[op.a.index]; }
 		uint64_t i(Operand op) const noexcept {
 			return op.i.wide ? i64[op.i.index] : i32[op.i.index];
@@ -68,12 +67,14 @@ export namespace SBA::IR {
 			aff.push_back(
 				Affine {
 					.displacement = 0,
-					.base         = (uint8_t)r(ANY_REGISTER).index,
-					.index        = (uint8_t)r(NO_REGISTER).index,
+					.base         = (uint8_t)r(ANY_REG).index,
+					.index        = (uint8_t)r(NO_REG).index,
 					.shift        = 0,
-					.extra        = (uint8_t)r(NO_REGISTER).index,
+					.extra        = (uint8_t)r(NO_REG).index,
 					.llength      = 0,
-					.llength_addr = 3
+					.llength_addr = 3,
+					.dereferenced = 1,
+					.negated      = 0
 				}
 			);
 		}
@@ -115,7 +116,7 @@ export namespace SBA::IR {
 		}
 
 		template <typename C>
-		Operand encode(C& cache, Affine val, bool deref = true) noexcept {
+		Operand encode(C& cache, Affine val) noexcept {
 			auto index = cache.a.get_or_insert(
 				std::bit_cast<uint64_t>(val),
 				[&] { return aff.push_back(val); }
@@ -123,19 +124,12 @@ export namespace SBA::IR {
 
 			assert(index);
 
-			return (deref)
-				? Operand {
-					.m = {
-						.type  = (uint32_t)Operand::Type::MEMORY,
-						.index = (uint32_t)*index
-					}
+			return Operand {
+				.a = {
+					.type  = (uint32_t)Operand::Type::AFFINE,
+					.index = (uint32_t)*index
 				}
-				: Operand {
-					.a = {
-						.type  = (uint32_t)Operand::Type::AFFINE,
-						.index = (uint32_t)*index
-					}
-				};
+			};
 		}
 
 		template <typename C>

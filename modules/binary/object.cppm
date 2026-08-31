@@ -2,7 +2,7 @@ module;
 #include <cstdint>
 #include <expected>
 #include <optional>
-#include <string>
+#include <string_view>
 #include <vector>
 
 export module sba.binary:object;
@@ -32,7 +32,7 @@ export namespace SBA::Binary {
 
 		const char* triple() const;
 		std::optional<uint64_t> read(uint64_t addr, uint8_t width) const;
-		std::expected<void, Error> load(const std::string& path);
+		std::expected<void, Error> load(std::string_view path);
 
 	private:
 		Target arch_;

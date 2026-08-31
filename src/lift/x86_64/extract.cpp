@@ -1,7 +1,7 @@
 module;
 #include <bit>
 #include <cstdint>
-#include <string>
+#include <string_view>
 #include <algorithm>
 #include <cctype>
 #include <llvm/MC/MCInst.h>
@@ -20,20 +20,21 @@ namespace SBA::Lift {
 
 	template <>
 	Register extract_r<Target::X86_64>(
-		const std::string& name) noexcept
+		std::string_view name) noexcept
 	{
-		auto reg_name = name;
-		std::transform(
-			reg_name.begin(),
-			reg_name.end(),
-			reg_name.begin(),
-			[](unsigned char c) { return (char)std::toupper(c); }
-		);
-
 		auto it = std::find_if(
 			registers.begin(),
 			registers.end(),
-			[&](const RegEntry& e) { return e.name == reg_name; }
+			[&](const RegEntry& e) {
+				return std::equal(
+					e.name.begin(), e.name.end(),
+					name.begin(), name.end(),
+					[](char a, char b) {
+						return std::toupper((unsigned char)a)
+							== std::toupper((unsigned char)b);
+					}
+				);
+			}
 		);
 
 		if (it != registers.end())
@@ -41,16 +42,16 @@ namespace SBA::Lift {
 				.type    = (uint32_t)Operand::Type::REGISTER,
 				.index   = (uint32_t)it->base,
 				.offset  = it->offset,
-				.llength = it->llength
+				.llength = it->llength,
+				.negated = 0
 			};
 
-		return NO_REGISTER.r;
+		return NO_REG.r;
 	}
 
 	template <>
 	Affine extract_a<Target::X86_64>(
-		const llvm::MCOperand& op,
-		uint8_t llength) noexcept
+		const llvm::MCOperand& op) noexcept
 	{
 		const auto* ops = &op;
 		auto b = parse_r<Target::X86_64>(ops[0]).r;
@@ -63,8 +64,10 @@ namespace SBA::Lift {
 			.index        = (uint8_t)i.index,
 			.shift        = (uint8_t)std::countr_zero((unsigned)ops[1].getImm()),
 			.extra        = (uint8_t)s.index,
-			.llength      = llength,
-			.llength_addr = (uint8_t)std::max(b.llength, i.llength)
+			.llength      = 0,
+			.llength_addr = (uint8_t)std::max(b.llength, i.llength),
+			.dereferenced = 0,
+			.negated      = 0
 		};
 	}
 

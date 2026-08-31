@@ -57,7 +57,7 @@ namespace SBA::Lift {
 			);
 
 			auto num_regs = info_reg<T>->getNumRegs();
-			llvm_registers<T>.assign(num_regs, NO_REGISTER);
+			llvm_registers<T>.assign(num_regs, NO_REG);
 			for (size_t i = 1; i < num_regs; ++i)
 				llvm_registers<T>[i] = Operand {
 					.r = extract_r<T>(info_reg<T>->getName(i))

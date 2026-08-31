@@ -16,19 +16,22 @@ export namespace SBA::IR {
 		uint32_t index   : 8;
 		uint32_t offset  : 8;
 		uint32_t llength : 4;
-		uint32_t         : 10;
+		uint32_t negated : 1;
+		uint32_t         : 9;
 
 		constexpr bool operator==(const Register&) const noexcept = default;
 	};
 
 	struct Affine {
-		int32_t displacement;
-		uint8_t base;
-		uint8_t index;
-		uint8_t shift        : 4;
-		uint8_t extra        : 4;
-		uint8_t llength      : 4;
-		uint8_t llength_addr : 4;
+		int64_t  displacement : 32;
+		uint64_t base         : 8;
+		uint64_t index        : 8;
+		uint64_t shift        : 3;
+		uint64_t extra        : 4;
+		uint64_t llength      : 4;
+		uint64_t llength_addr : 3;
+		uint64_t dereferenced : 1;
+		uint64_t negated      : 1;
 
 		constexpr bool operator==(const Affine&) const noexcept = default;
 	};
@@ -37,7 +40,6 @@ export namespace SBA::IR {
 		enum class Type : uint8_t {
 			REGISTER,
 			IMMEDIATE,
-			MEMORY,
 			AFFINE
 		};
 
@@ -48,11 +50,6 @@ export namespace SBA::IR {
 			uint32_t wide  : 1;
 			uint32_t index : IMM_BITS;
 		} i;
-
-		struct {
-			uint32_t type  : 2;
-			uint32_t index : AFF_BITS;
-		} m;
 
 		struct {
 			uint32_t type  : 2;

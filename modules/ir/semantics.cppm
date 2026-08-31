@@ -2,7 +2,7 @@ module;
 #include <cstdint>
 #include <utility>
 #include <tuple>
-#include <string>
+#include <string_view>
 
 export module sba.ir:semantics;
 
@@ -80,7 +80,7 @@ export namespace SBA::IR {
 		}
 	}
 
-	std::string to_string(Operator op) {
+	constexpr std::string_view to_string(Operator op) noexcept {
 		switch (op) {
 			#define DEF_STR(name, ari, str, desc) case Operator::name: return str;
 			OPERATOR_LIST(DEF_STR)
