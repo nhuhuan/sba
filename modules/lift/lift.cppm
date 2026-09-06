@@ -6,7 +6,7 @@ export module sba.lift;
 import sba.arch;
 import sba.ir;
 import :fallback;
-export import :decoder;
+export import :decode;
 export import :cache;
 
 namespace SBA::Lift {

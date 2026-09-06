@@ -8,10 +8,10 @@ module sba.lift;
 
 import sba.arch;
 import sba.ir;
-import :decoder;
+import :decode;
 import :cache;
 import :target;
-import :pattern_x86_64;
+import :dispatch_x86_64;
 
 namespace SBA::Lift {
 
@@ -25,16 +25,17 @@ namespace SBA::Lift {
 		Cache& cache,
 		const MCInstruction& inst) noexcept
 	{
-		static const std::vector<LiftFn> dispatch_table = [&]() {
+		static const std::vector<Rule> dispatch_rules = [&]() {
 			assert(info_inst<Target::X86_64>);
 			auto num_opcodes = info_inst<Target::X86_64>->getNumOpcodes();
-			std::vector<LiftFn> table(num_opcodes, nullptr);
-			return table;
+			std::vector<Rule> rules(num_opcodes, nullptr);
+
+			return rules;
 		}();
 
 		unsigned opcode = inst.getOpcode();
-		if (opcode < dispatch_table.size() && dispatch_table[opcode])
-			return dispatch_table[opcode](ctx, cache, inst);
+		if (opcode < dispatch_rules.size() && dispatch_rules[opcode])
+			return dispatch_rules[opcode](ctx, cache, inst);
 
 		return std::nullopt;
 	}

@@ -3,7 +3,7 @@ module;
 #include <string_view>
 #include <llvm/MC/MCInst.h>
 
-export module sba.lift:parser;
+export module sba.lift:parse;
 
 import sba.arch;
 import sba.ir;

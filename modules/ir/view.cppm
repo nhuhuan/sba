@@ -77,7 +77,7 @@ export namespace SBA::IR {
 				operand_ptr = (const Operand*)(&ctx_.inst[base + cnt]);
 			}
 
-			return Iterator{
+			return Iterator {
 				.opcode_ptr = opcode_ptr,
 				.operand_ptr = operand_ptr,
 				.index = 0
@@ -85,7 +85,7 @@ export namespace SBA::IR {
 		}
 
 		Iterator end() const noexcept {
-			return Iterator{
+			return Iterator {
 				.opcode_ptr = nullptr,
 				.operand_ptr = nullptr,
 				.index = count()

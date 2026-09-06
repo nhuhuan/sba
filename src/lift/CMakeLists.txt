@@ -7,14 +7,15 @@ target_sources(lift
 			FILES
 				${CMAKE_SOURCE_DIR}/modules/lift/cache.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/target.cppm
-				${CMAKE_SOURCE_DIR}/modules/lift/decoder.cppm
-				${CMAKE_SOURCE_DIR}/modules/lift/parser.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/decode.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/parse.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/emit.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/fallback.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/lift.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/x86_64/pattern.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/x86_64/dispatch.cppm
 	PRIVATE
-		decoder.cpp
+		decode.cpp
 		x86_64/extract.cpp
 		x86_64/lift.cpp
 )

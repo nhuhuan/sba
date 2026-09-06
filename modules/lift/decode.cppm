@@ -9,7 +9,7 @@ namespace llvm {
 	class MCDisassembler;
 }
 
-export module sba.lift:decoder;
+export module sba.lift:decode;
 
 import sba.binary;
 

@@ -19,9 +19,9 @@ module sba.lift;
 
 import sba.arch;
 import sba.binary;
-import :decoder;
+import :decode;
 import :target;
-import :parser;
+import :parse;
 
 namespace SBA::Lift {
 

@@ -10,10 +10,10 @@ export module sba.lift:fallback;
 
 import sba.arch;
 import sba.ir;
-import :decoder;
+import :decode;
 import :cache;
 import :target;
-import :parser;
+import :parse;
 import :emit;
 
 namespace SBA::Lift {

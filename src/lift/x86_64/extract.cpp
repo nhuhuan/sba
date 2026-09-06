@@ -10,7 +10,7 @@ module sba.lift;
 
 import sba.arch;
 import sba.ir;
-import :parser;
+import :parse;
 
 namespace SBA::Lift {
 

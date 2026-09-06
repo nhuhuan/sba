@@ -104,11 +104,9 @@ export namespace SBA::Arch::X86_64 {
 		ANY,
 		TMP1,
 		TMP2,
-
 		#define DEF_REG_ENUM(name, length) name,
 		REGISTER_LIST(DEF_REG_ENUM)
 		#undef DEF_REG_ENUM
-
 		PC    = RIP,
 		SP    = RSP,
 		FP    = RBP,

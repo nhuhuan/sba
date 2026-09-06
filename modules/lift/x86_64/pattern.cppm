@@ -1,16 +1,10 @@
 module;
-#include <cctype>
 #include <cstdint>
-#include <optional>
-#include <span>
-#include <string_view>
 
 export module sba.lift:pattern_x86_64;
 
 import sba.arch;
 import sba.ir;
-import :decoder;
-import :cache;
 import :emit;
 
 namespace SBA::Lift::X86_64 {
@@ -23,111 +17,234 @@ namespace SBA::Lift::X86_64 {
 	using a = DynamicAffine;
 	using m = DynamicMemory;
 
-	using LiftFn = Instruction(*)(
-		Context& ctx,
-		Cache& cache,
-		const MCInstruction& inst
-	);
-
-	template <const auto& Rule>
-	inline Instruction lifter(
-		Context& ctx,
-		Cache& cache,
-		const MCInstruction& inst)
-	{
-		return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, Rule);
-	}
-
-	struct Suffix {
-		enum class Type : uint8_t {
-			RR,
-			RM,
-			MR,
-			RI,
-			MI,
-			RA
-		} type;
-		uint8_t l;
+	inline constexpr Operand RAX = {
+		.r = {
+			(uint32_t)SBA::IR::Operand::Type::REGISTER,
+			(uint32_t)SBA::Arch::X86_64::Reg::RAX,
+			0,
+			3,
+			0
+		}
 	};
 
-	inline constexpr uint8_t parse_l(std::string_view s) noexcept {
-		if (s.starts_with("64")) return 3;
-		if (s.starts_with("32")) return 2;
-		if (s.starts_with("16")) return 1;
-		return 0;
-	}
-
-	inline constexpr std::optional<Suffix> parse_suffix(
-		std::string_view s) noexcept
-	{
-		if (auto pos = s.find("rm"); pos != std::string_view::npos) {
-			std::string_view t = s.substr(pos + 2);
-			std::string_view l =
-				(!t.empty() && std::isdigit(t[0])) ? t : s.substr(0, pos);
-			return Suffix{ Suffix::Type::RM, parse_l(l) };
+	inline constexpr Operand TMP1 = {
+		.r = {
+			(uint32_t)SBA::IR::Operand::Type::REGISTER,
+			(uint32_t)SBA::Arch::X86_64::Reg::TMP1,
+			0,
+			3,
+			0
 		}
+	};
 
-		if (auto pos = s.find("mr"); pos != std::string_view::npos)
-			return Suffix{ Suffix::Type::MR, parse_l(s.substr(0, pos)) };
-
-		if (auto pos = s.find("mi"); pos != std::string_view::npos)
-			return Suffix{ Suffix::Type::MI, parse_l(s.substr(0, pos)) };
-
-		if (s.contains("rr"))
-			return Suffix{ Suffix::Type::RR, 0 };
-
-		if (s.contains("ri") ||
-			s == "64i32"     || s == "32i32"   || s == "16i16"   || s == "8i8")
-			return Suffix{ Suffix::Type::RI, 0 };
-
-		if (s.ends_with('r'))
-			return Suffix{ Suffix::Type::RA, 0 };
-
-		return std::nullopt;
-	}
-
-	#define DISPATCH(RULE)                                            \
-		if constexpr (requires { lifter<Rule::RULE>; }) {             \
-			out = lifter<Rule::RULE>;                                 \
-			return true;                                              \
-		}                                                             \
-		break;
-
-	#define DISPATCH_LENGTH(RULE)                                     \
-		if constexpr (requires { lifter<Rule::template RULE<0>>; }) { \
-			static constexpr LiftFn table[] = {                       \
-				lifter<Rule::template RULE<0>>,                       \
-				lifter<Rule::template RULE<1>>,                       \
-				lifter<Rule::template RULE<2>>,                       \
-				lifter<Rule::template RULE<3>>                        \
-			};                                                        \
-			out = table[suffix->l];                                   \
-			return true;                                              \
-		}                                                             \
-		break;
-
-	template <typename Rule>
-	inline bool match(std::string_view name, std::string_view op, LiftFn& out) {
-		if (!name.starts_with(op))
-			return false;
-
-		auto suffix = parse_suffix(name.substr(op.size()));
-		if (!suffix)
-			return false;
-
-		switch (suffix->type) {
-			case Suffix::Type::RR: DISPATCH(RR);
-			case Suffix::Type::RI: DISPATCH(RI);
-			case Suffix::Type::RA: DISPATCH(RA);
-			case Suffix::Type::RM: DISPATCH_LENGTH(RM);
-			case Suffix::Type::MR: DISPATCH_LENGTH(MR);
-			case Suffix::Type::MI: DISPATCH_LENGTH(MI);
+	inline constexpr Operand TMP2 = {
+		.r = {
+			(uint32_t)SBA::IR::Operand::Type::REGISTER,
+			(uint32_t)SBA::Arch::X86_64::Reg::TMP2,
+			0,
+			3,
+			0
 		}
+	};
 
-		return false;
+	inline constexpr Operand FLAGS = {
+		.r = {
+			(uint32_t)SBA::IR::Operand::Type::REGISTER,
+			(uint32_t)SBA::Arch::X86_64::Reg::FLAGS,
+			0,
+			3,
+			0
+		}
+	};
+
+	/* 0. Temporary Copy */
+
+	template <O op, uint8_t l>
+	constexpr MCO r_R1(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(0) };
 	}
 
-	#undef DISPATCH
-	#undef DISPATCH_LENGTH
+	template <O op, uint8_t l>
+	constexpr MCO r_1R(MCOperand reg) noexcept {
+		return { op, r(0), reg.llength(l) };
+	}
+
+	template <O op, uint8_t l>
+	constexpr MCO r_RR(MCOperand reg1, MCOperand reg2) noexcept {
+		return { op, reg1.llength(l), reg2.llength(l) };
+	}
+
+	template <O op, uint8_t l>
+	constexpr MCO rr_R1(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(0) };
+	}
+
+	template <O op, uint8_t l>
+	constexpr MCO rr_2R(MCOperand reg) noexcept {
+		return { op, r(1), reg.llength(l) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO rm_R1(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(0) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO rm_2R(MCOperand reg) noexcept {
+		return { op, m(1, lm), reg.llength(l) };
+	}
+
+	/* 1. Data Copy */
+
+	template <O op>
+	constexpr MCO rr_12() noexcept {
+		return { op, r(0), r(1) };
+	}
+
+	template <O op>
+	constexpr MCO ri_12() noexcept {
+		return { op, r(0), i(1) };
+	}
+
+	template <O op>
+	constexpr MCO ra_12() noexcept {
+		return { op, r(0), a(1) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO rm_12() noexcept {
+		return { op, r(0), m(1, lm) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO mr_12() noexcept {
+		return { op, m(0, lm), r(5) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO mi_12() noexcept {
+		return { op, m(0, lm), i(5) };
+	}
+
+	/* 2. Unary ALU */
+
+	template <O op>
+	constexpr MCO r_11() noexcept {
+		return { op, r(0), r(0) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO m_11() noexcept {
+		return { op, m(0, lm), m(0, lm) };
+	}
+
+	/* 3. Binary ALU */
+
+	template <O op>
+	constexpr MCO rrr_123() noexcept {
+		return { op, r(0), r(1), r(2) };
+	}
+
+	template <O op>
+	constexpr MCO rri_123() noexcept {
+		return { op, r(0), r(1), i(2) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO rrm_123() noexcept {
+		return { op, r(0), r(1), m(2, lm) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO mr_112() noexcept {
+		return { op, m(0, lm), m(0, lm), r(5) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO mi_112() noexcept {
+		return { op, m(0, lm), m(0, lm), i(5) };
+	}
+
+	template <O op, uint8_t l>
+	constexpr MCO rrr_123R(MCOperand reg) noexcept {
+		return { op, r(0), r(1), r(2), reg.llength(l) };
+	}
+
+	template <O op, uint8_t l>
+	constexpr MCO rri_123R(MCOperand reg) noexcept {
+		return { op, r(0), r(1), i(2), reg.llength(l) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO rrm_123R(MCOperand reg) noexcept {
+		return { op, r(0), r(1), m(2, lm), reg.llength(l) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO mr_112R(MCOperand reg) noexcept {
+		return { op, m(0, lm), m(0, lm), r(5), reg.llength(l) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO mi_112R(MCOperand reg) noexcept {
+		return { op, m(0, lm), m(0, lm), i(5), reg.llength(l) };
+	}
+
+	/* 4. Comparison */
+
+	template <O op, uint8_t l, bool neg = false>
+	constexpr MCO rrr_R23(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(1), neg ? -r(2) : r(2) };
+	}
+
+	template <O op, uint8_t l, bool neg = false>
+	constexpr MCO rri_R23(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(1), neg ? -i(2) : i(2) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l, bool neg = false>
+	constexpr MCO rrm_R23(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(1), neg ? -m(2, lm) : m(2, lm) };
+	}
+
+	template <O op, uint8_t l, bool neg = false>
+	constexpr MCO rr_R12(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(0), neg ? -r(1) : r(1) };
+	}
+
+	template <O op, uint8_t l, bool neg = false>
+	constexpr MCO ri_R12(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(0), neg ? -i(1) : i(1) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l, bool neg = false>
+	constexpr MCO rm_R12(MCOperand reg) noexcept {
+		return { op, reg.llength(l), r(0), neg ? -m(1, lm) : m(1, lm) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l, bool neg = false>
+	constexpr MCO mr_R12(MCOperand reg) noexcept {
+		return { op, reg.llength(l), m(0, lm), neg ? -r(5) : r(5) };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l, bool neg = false>
+	constexpr MCO mi_R12(MCOperand reg) noexcept {
+		return { op, reg.llength(l), m(0, lm), neg ? -i(5) : i(5) };
+	}
+
+	template <O op, uint8_t l, bool neg = false>
+	constexpr MCO i_RR1(MCOperand reg1, MCOperand reg2) noexcept {
+		return { op, reg1.llength(l), reg2.llength(l), neg ? -i(0) : i(0) };
+	}
+
+	template <O op, uint8_t l>
+	constexpr MCO r_R1I(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg.llength(l), r(0), imm };
+	}
+
+	template <O op, uint8_t l, uint8_t lm = l>
+	constexpr MCO m_R1I(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg.llength(l), m(0, lm), imm };
+	}
 
 }

@@ -1,5 +1,7 @@
 module;
 #include <array>
+#include <cassert>
+#include <concepts>
 #include <cstdint>
 #include <span>
 
@@ -7,9 +9,9 @@ export module sba.lift:emit;
 
 import sba.arch;
 import sba.ir;
-import :decoder;
+import :decode;
 import :cache;
-import :parser;
+import :parse;
 
 namespace SBA::Lift {
 
@@ -124,6 +126,24 @@ namespace SBA::Lift {
 		constexpr MCOperand(DynamicAffine d) noexcept
 			: type(Type::DYN_AFFINE), a_(d) {}
 
+		constexpr MCOperand llength(uint8_t l) const noexcept {
+			MCOperand res = *this;
+			switch (res.type) {
+				case Type::OPERAND:
+					res.O_.r.llength = l;
+					break;
+				case Type::REGISTER:
+					res.R_.llength   = l;
+					break;
+				case Type::AFFINE:
+					res.A_.llength   = l;
+					break;
+				default:
+					assert(false);
+			}
+			return res;
+		}
+
 		template <Target T>
 		inline Operand encode(
 			Context& ctx,
@@ -190,26 +210,14 @@ namespace SBA::Lift {
 
 		constexpr MCOperation() noexcept = default;
 
-		constexpr MCOperation(Operator o, MCOperand d) noexcept
-			: op(o), dst(d), src{} {}
-
-		constexpr MCOperation(Operator o, MCOperand d, MCOperand s) noexcept
-			: op(o), dst(d), src{ s } {}
-
+		template <typename... Args>
+			requires (sizeof...(Args) <= MAX_ARITY &&
+			         (std::convertible_to<Args, MCOperand> && ...))
 		constexpr MCOperation(
 			Operator o,
 			MCOperand d,
-			MCOperand s1,
-			MCOperand s2) noexcept
-			: op(o), dst(d), src{ s1, s2 } {}
-
-		constexpr MCOperation(
-			Operator o,
-			MCOperand d,
-			MCOperand s1,
-			MCOperand s2,
-			MCOperand s3) noexcept
-			: op(o), dst(d), src{ s1, s2, s3 } {}
+			Args&&... args) noexcept
+			: op(o), dst(d), src{ static_cast<MCOperand>(args)... } {}
 	};
 
 	template <Target T>
