@@ -12,6 +12,8 @@ import :decode;
 import :cache;
 import :target;
 import :dispatch_x86_64;
+import :data_x86_64;
+import :alu_x86_64;
 
 namespace SBA::Lift {
 
@@ -29,7 +31,7 @@ namespace SBA::Lift {
 			assert(info_inst<Target::X86_64>);
 			auto num_opcodes = info_inst<Target::X86_64>->getNumOpcodes();
 			std::vector<Rule> rules(num_opcodes, nullptr);
-
+			dispatch(rules, Mnemonics_DATA{}, Mnemonics_ALU{});
 			return rules;
 		}();
 

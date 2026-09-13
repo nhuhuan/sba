@@ -32,7 +32,36 @@ namespace SBA::Lift::X86_64 {
 		};
 	}
 
-	/* 0. Temporary Copy */
+	inline constexpr O CC[16] = {
+		O::SELECT_O,
+		O::SELECT_NO,
+		O::SELECT_LTU,
+		O::SELECT_GEU,
+		O::SELECT_EQ,
+		O::SELECT_NE,
+		O::SELECT_LEU,
+		O::SELECT_GTU,
+		O::SELECT_S,
+		O::SELECT_NS,
+		O::SELECT_P,
+		O::SELECT_NP,
+		O::SELECT_LT,
+		O::SELECT_GE,
+		O::SELECT_LE,
+		O::SELECT_GT
+	};
+
+	/* 0. Temporary/Fixed Copy */
+
+	template <O op>
+	constexpr MCO r_r(MCOperand reg) noexcept {
+		return { op, reg };
+	}
+
+	template <O op>
+	constexpr MCO m_r(MCOperand reg) noexcept {
+		return { op, reg };
+	}
 
 	template <O op>
 	constexpr MCO r_r1(MCOperand reg) noexcept {
@@ -47,6 +76,16 @@ namespace SBA::Lift::X86_64 {
 	template <O op>
 	constexpr MCO r_rr(MCOperand reg1, MCOperand reg2) noexcept {
 		return { op, reg1, reg2 };
+	}
+
+	template <O op>
+	constexpr MCO r_rrr(MCOperand reg1, MCOperand reg2, MCOperand reg3) noexcept {
+		return { op, reg1, reg2, reg3 };
+	}
+
+	template <O op>
+	constexpr MCO m_rrr(MCOperand reg1, MCOperand reg2, MCOperand reg3) noexcept {
+		return { op, reg1, reg2, reg3 };
 	}
 
 	template <O op>
@@ -67,6 +106,26 @@ namespace SBA::Lift::X86_64 {
 	template <O op, uint8_t lm>
 	constexpr MCO rm_2r(MCOperand reg) noexcept {
 		return { op, m(1, lm), reg };
+	}
+
+	template <O op>
+	constexpr MCO r_rri(MCOperand reg1, MCOperand reg2, uint64_t imm) noexcept {
+		return { op, reg1, reg2, imm };
+	}
+
+	template <O op>
+	constexpr MCO m_rri(MCOperand reg1, MCOperand reg2, uint64_t imm) noexcept {
+		return { op, reg1, reg2, imm };
+	}
+
+	template <O op>
+	constexpr MCO _rr(MCOperand reg1, MCOperand reg2) noexcept {
+		return { op, reg1, reg2 };
+	}
+
+	template <O op>
+	constexpr MCO _rri(MCOperand reg1, MCOperand reg2, uint64_t imm) noexcept {
+		return { op, reg1, reg2, imm };
 	}
 
 	/* 1. Data Copy */
@@ -104,13 +163,38 @@ namespace SBA::Lift::X86_64 {
 	/* 2. Unary ALU */
 
 	template <O op>
-	constexpr MCO r_11() noexcept {
-		return { op, r(0), r(0) };
+	constexpr MCO rr_12i(MCOperand imm) noexcept {
+		return { op, r(0), r(1), imm };
 	}
 
 	template <O op, uint8_t lm>
 	constexpr MCO m_11() noexcept {
 		return { op, m(0, lm), m(0, lm) };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCO m_11i(MCOperand imm) noexcept {
+		return { op, m(0, lm), m(0, lm), imm };
+	}
+
+	template <O op>
+	constexpr MCO rrr_13() noexcept {
+		return { op, r(0), r(2) };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCO rrm_13() noexcept {
+		return { op, r(0), m(2, lm) };
+	}
+
+	template <O op>
+	constexpr MCO rrr_r3(MCOperand reg) noexcept {
+		return { op, reg, r(2) };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCO rrm_r3(MCOperand reg) noexcept {
+		return { op, reg, m(2, lm) };
 	}
 
 	/* 3. Binary ALU */
@@ -130,6 +214,16 @@ namespace SBA::Lift::X86_64 {
 		return { op, r(0), r(1), m(2, lm) };
 	}
 
+	template <O op>
+	constexpr MCO r_rr1(MCOperand reg1, MCOperand reg2) noexcept {
+		return { op, reg1, reg2, r(0) };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCO m_rr1(MCOperand reg1, MCOperand reg2) noexcept {
+		return { op, reg1, reg2, m(0, lm) };
+	}
+
 	template <O op, uint8_t lm>
 	constexpr MCO mr_112() noexcept {
 		return { op, m(0, lm), m(0, lm), r(5) };
@@ -138,6 +232,16 @@ namespace SBA::Lift::X86_64 {
 	template <O op, uint8_t lm>
 	constexpr MCO mi_112() noexcept {
 		return { op, m(0, lm), m(0, lm), i(5) };
+	}
+
+	template <O op>
+	constexpr MCO rr_12r(MCOperand reg) noexcept {
+		return { op, r(0), r(1), reg };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCO m_11r(MCOperand reg) noexcept {
+		return { op, m(0, lm), m(0, lm), reg };
 	}
 
 	template <O op>
@@ -163,6 +267,16 @@ namespace SBA::Lift::X86_64 {
 	template <O op, uint8_t lm>
 	constexpr MCO mi_112r(MCOperand reg) noexcept {
 		return { op, m(0, lm), m(0, lm), i(5), reg };
+	}
+
+	template <O op>
+	constexpr MCO rrr_1ir(MCOperand imm, MCOperand reg) noexcept {
+		return { op, r(0), imm, reg };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCO rrm_1ir(MCOperand imm, MCOperand reg) noexcept {
+		return { op, r(0), imm, reg };
 	}
 
 	/* 4. Comparison */
@@ -212,14 +326,54 @@ namespace SBA::Lift::X86_64 {
 		return { op, reg1, reg2, neg ? -i(0) : i(0) };
 	}
 
+	template <O op, bool neg = false>
+	constexpr MCO rr_r1i(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, r(0), neg ? -imm : imm };
+	}
+
+	template <O op, bool neg = false>
+	constexpr MCO rri_r1i(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, r(0), neg ? -imm : imm };
+	}
+
+	template <O op, bool neg = false>
+	constexpr MCO rr_r2i(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, r(1), neg ? -imm : imm };
+	}
+
+	template <O op, uint8_t lm, bool neg = false>
+	constexpr MCO rm_r2i(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, m(1, lm), neg ? -imm : imm };
+	}
+
+	template <O op, bool neg = false>
+	constexpr MCO rrr_r3i(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, r(2), neg ? -imm : imm };
+	}
+
+	template <O op, uint8_t lm, bool neg = false>
+	constexpr MCO rrm_r3i(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, m(2, lm), neg ? -imm : imm };
+	}
+
+	template <O op, uint8_t lm, bool neg = false>
+	constexpr MCO m_r1i(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, m(0, lm), neg ? -imm : imm };
+	}
+
+	template <O op, uint8_t lm, bool neg = false>
+	constexpr MCO mi_r1i(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, m(0, lm), neg ? -imm : imm };
+	}
+
 	template <O op>
-	constexpr MCO r_r1i(MCOperand reg, MCOperand imm) noexcept {
-		return { op, reg, r(0), imm };
+	constexpr MCO rr_ri2(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, imm, r(1) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO m_r1i(MCOperand reg, MCOperand imm) noexcept {
-		return { op, reg, m(0, lm), imm };
+	constexpr MCO m_ri1(MCOperand reg, MCOperand imm) noexcept {
+		return { op, reg, imm, m(0, lm) };
 	}
 
 }

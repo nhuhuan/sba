@@ -14,6 +14,8 @@ target_sources(lift
 				${CMAKE_SOURCE_DIR}/modules/lift/lift.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/x86_64/pattern.cppm
 				${CMAKE_SOURCE_DIR}/modules/lift/x86_64/dispatch.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/x86_64/data.cppm
+				${CMAKE_SOURCE_DIR}/modules/lift/x86_64/alu.cppm
 	PRIVATE
 		decode.cpp
 		x86_64/extract.cpp
