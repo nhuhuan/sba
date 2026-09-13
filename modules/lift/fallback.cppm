@@ -33,7 +33,7 @@ namespace SBA::Lift {
 
 		for (int i = 0; i < desc.getNumDefs(); ++i) {
 			assert(count < ops.size());
-			ops[count++] = MCOperation(Operator::CLOBBERED,
+			ops[count++] = MCOperation(Operator::CLB,
 									   DynamicRegister((uint8_t)i));
 		}
 
@@ -41,13 +41,13 @@ namespace SBA::Lift {
 			auto dst = parse_r<T>(reg);
 			if (dst != NO_REG) {
 				assert(count < ops.size());
-				ops[count++] = MCOperation(Operator::CLOBBERED, dst.r);
+				ops[count++] = MCOperation(Operator::CLB, dst.r);
 			}
 		}
 
 		if (desc.mayStore()) {
 			assert(count < ops.size());
-			ops[count++] = MCOperation(Operator::CLOBBERED, ANY_MEM);
+			ops[count++] = MCOperation(Operator::CLB, ANY_MEM);
 		}
 
 		return emit<T>(ctx, cache, inst, { ops.data(), count });

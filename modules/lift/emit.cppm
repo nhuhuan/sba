@@ -4,6 +4,7 @@ module;
 #include <concepts>
 #include <cstdint>
 #include <span>
+#include <utility>
 
 export module sba.lift:emit;
 
@@ -126,20 +127,27 @@ namespace SBA::Lift {
 		constexpr MCOperand(DynamicAffine d) noexcept
 			: type(Type::DYN_AFFINE), a_(d) {}
 
-		constexpr MCOperand llength(uint8_t l) const noexcept {
+		constexpr MCOperand operator-() const noexcept {
 			MCOperand res = *this;
 			switch (res.type) {
-				case Type::OPERAND:
-					res.O_.r.llength = l;
+				case Type::IMMEDIATE:
+					res.I_ = -res.I_;
 					break;
-				case Type::REGISTER:
-					res.R_.llength   = l;
+				case Type::DYN_REGISTER:
+					res.r_ = -res.r_;
 					break;
-				case Type::AFFINE:
-					res.A_.llength   = l;
+				case Type::DYN_IMMEDIATE:
+					res.i_ = -res.i_;
+					break;
+				case Type::DYN_MEMORY:
+					res.m_ = -res.m_;
+					break;
+				case Type::DYN_AFFINE:
+					res.a_ = -res.a_;
 					break;
 				default:
 					assert(false);
+					std::unreachable();
 			}
 			return res;
 		}
@@ -220,24 +228,29 @@ namespace SBA::Lift {
 			: op(o), dst(d), src{ static_cast<MCOperand>(args)... } {}
 	};
 
-	template <Target T>
+	template <Target T, typename... MCOperations>
 	inline Instruction emit(
 		Context& ctx,
 		Cache& cache,
 		const MCInstruction& inst,
-		std::span<const MCOperation> ops)
+		MCOperations&&... ops)
 	{
 		std::array<Operator, MAX_OPERATIONS> opcodes;
 		std::array<Operand, MAX_OPERANDS> operands;
 		size_t opcode_count = 0;
 		size_t operand_count = 0;
 
-		for (const auto& op : ops) {
-			opcodes[opcode_count++] = op.op;
-			operands[operand_count++] = op.dst.encode<T>(ctx, cache, inst);
-			for (size_t i = 0; i < arity(op.op); ++i)
-				operands[operand_count++] = op.src[i].encode<T>(ctx, cache, inst);
-		}
+		auto serialize = [&](auto&& arg) {
+			std::span<const MCOperation> ops(arg);
+			for (const auto& op : ops) {
+				opcodes[opcode_count++] = op.op;
+				operands[operand_count++] = op.dst.encode<T>(ctx, cache, inst);
+				for (size_t i = 0; i < arity(op.op); ++i)
+					operands[operand_count++] = op.src[i].encode<T>(ctx, cache, inst);
+			}
+		};
+
+		(serialize(ops), ...);
 
 		return ctx.encode(
 			cache,
