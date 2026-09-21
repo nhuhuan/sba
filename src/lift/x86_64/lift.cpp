@@ -11,9 +11,9 @@ import sba.ir;
 import :decode;
 import :cache;
 import :target;
-import :dispatch_x86_64;
-import :data_x86_64;
-import :alu_x86_64;
+import :x86_64_dispatch;
+import :x86_64_data;
+import :x86_64_alu;
 
 namespace SBA::Lift {
 

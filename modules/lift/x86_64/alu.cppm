@@ -2,18 +2,15 @@ module;
 #include <cstdint>
 #include <span>
 
-export module sba.lift:alu_x86_64;
+export module sba.lift:x86_64_alu;
 
 import sba.arch;
 import sba.ir;
 import :emit;
-import :pattern_x86_64;
-import :dispatch_x86_64;
+import :x86_64_pattern;
+import :x86_64_dispatch;
 
 namespace SBA::Lift::X86_64 {
-
-	#define R(reg, ...) \
-		REG(SBA::Arch::X86_64::Reg::reg __VA_OPT__(,) __VA_ARGS__)
 
 	#define P(Suffix, ...) \
 		template <uint8_t l> \
@@ -25,64 +22,72 @@ namespace SBA::Lift::X86_64 {
 
 	template <O op, bool neg = false>
 	struct P_ALU {
-		P(rr,   { rrr_123<op>() },    { rrr_r23<O::CMP,neg>(R(FLAGS,l)) });
-		P(ri,   { rri_123<op>() },    { rri_r23<O::CMP,neg>(R(FLAGS,l)) });
-		PM(rm,  { rrm_123<op,lm>() }, { rrm_r23<O::CMP,lm,neg>(R(FLAGS,l)) });
-		PM(mr,  { mr_112<op,lm>() },  { mr_r12<O::CMP,lm,neg>(R(FLAGS,l)) });
-		PM(mi,  { mi_112<op,lm>() },  { mi_r12<O::CMP,lm,neg>(R(FLAGS,l)) });
+		P(rr,   { rrr_123<op>() },    { rrr_x23<O::CMP,neg>(R(FLAGS,l)) });
+		P(ri,   { rri_123<op>() },    { rri_x23<O::CMP,neg>(R(FLAGS,l)) });
+		PM(rm,  { rrm_123<op,lm>() }, { rrm_x23<O::CMP,lm,neg>(R(FLAGS,l)) });
+		PM(mr,  { mr_112<op,lm>() },  { mr_x12<O::CMP,lm,neg>(R(FLAGS,l)) });
+		PM(mi,  { mi_112<op,lm>() },  { mi_x12<O::CMP,lm,neg>(R(FLAGS,l)) });
 	};
 
 	template <O op, bool neg = false>
 	struct P_ALUC {
-		P(rr,   { rrr_123r<op>(R(FLAGS,l)) },    { rrr_r23<O::CMP,neg>(R(FLAGS,l)) });
-		P(ri,   { rri_123r<op>(R(FLAGS,l)) },    { rri_r23<O::CMP,neg>(R(FLAGS,l)) });
-		PM(rm,  { rrm_123r<op,lm>(R(FLAGS,l)) }, { rrm_r23<O::CMP,lm,neg>(R(FLAGS,l)) });
-		PM(mr,  { mr_112r<op,lm>(R(FLAGS,l)) },  { mr_r12<O::CMP,lm,neg>(R(FLAGS,l)) });
-		PM(mi,  { mi_112r<op,lm>(R(FLAGS,l)) },  { mi_r12<O::CMP,lm,neg>(R(FLAGS,l)) });
+		P(rr,   { rrr_123x<op>(R(FLAGS,l)) },    { rrr_x23<O::CMP,neg>(R(FLAGS,l)) });
+		P(ri,   { rri_123x<op>(R(FLAGS,l)) },    { rri_x23<O::CMP,neg>(R(FLAGS,l)) });
+		PM(rm,  { rrm_123x<op,lm>(R(FLAGS,l)) }, { rrm_x23<O::CMP,lm,neg>(R(FLAGS,l)) });
+		PM(mr,  { mr_112x<op,lm>(R(FLAGS,l)) },  { mr_x12<O::CMP,lm,neg>(R(FLAGS,l)) });
+		PM(mi,  { mi_112x<op,lm>(R(FLAGS,l)) },  { mi_x12<O::CMP,lm,neg>(R(FLAGS,l)) });
 	};
 
 	template <O op, bool neg = false>
 	struct P_CMP {
-		P(rr,  { rr_r12<op,neg>(R(FLAGS,l)) });
-		P(ri,  { ri_r12<op,neg>(R(FLAGS,l)) });
-		P(i,   { i_rr1<op,neg>(R(FLAGS,l),R(RAX,l)) });
-		PM(rm, { rm_r12<op,lm,neg>(R(FLAGS,l)) });
-		PM(mr, { mr_r12<op,lm,neg>(R(FLAGS,l)) });
-		PM(mi, { mi_r12<op,lm,neg>(R(FLAGS,l)) });
+		P(rr,  { rr_x12<op,neg>(R(FLAGS,l)) });
+		P(ri,  { ri_x12<op,neg>(R(FLAGS,l)) });
+		P(i,   { i_xx1<op,neg>(R(FLAGS,l),R(RAX,l)) });
+		PM(rm, { rm_x12<op,lm,neg>(R(FLAGS,l)) });
+		PM(mr, { mr_x12<op,lm,neg>(R(FLAGS,l)) });
+		PM(mi, { mi_x12<op,lm,neg>(R(FLAGS,l)) });
 	};
 
 	template <O op, bool neg = false>
 	struct P_STEP {
-		P(r,   { rr_12i<op>(1) },   { rr_r2i<O::CMP,neg>(R(FLAGS,l),1) });
-		PM(m,  { m_11i<op,lm>(1) }, { m_r1i<O::CMP,lm,neg>(R(FLAGS,l),1) });
+		P(r,   { rr_12x<op>(1) },   { rr_x2x<O::CMP,neg>(R(FLAGS,l),1) });
+		PM(m,  { m_11x<op,lm>(1) }, { m_x1x<O::CMP,lm,neg>(R(FLAGS,l),1) });
 	};
 
 	template <O op_h, O op_l>
 	struct P_MUL {
-		P(r,   { r_rr1<op_h>(R(RDX,l),R(RAX,l)),    r_rr1<op_l>(R(RAX,l),R(RAX,l)) },    { r_rri<O::CMP>(R(FLAGS,l),R(RDX,l),0) });
-		PM(m,  { m_rr1<op_h,lm>(R(RDX,l),R(RAX,l)), m_rr1<op_l,lm>(R(RAX,l),R(RAX,l)) }, { m_rri<O::CMP>(R(FLAGS,l),R(RDX,l),0) });
+		P(r,   { r_xx1<op_h>(R(RDX,l),R(RAX,l)), r_xx1<op_l>(R(RAX,l),R(RAX,l)) },
+			   { mco<O::CMP>(R(FLAGS,l),R(RDX,l),0) });
+		PM(m,  { m_xx1<op_h,lm>(R(RDX,l),R(RAX,l)), m_xx1<op_l,lm>(R(RAX,l),R(RAX,l)) },
+			   { mco<O::CMP>(R(FLAGS,l),R(RDX,l),0) });
 	};
 
 	template <O op_h, O op_l>
 	struct P_DIV {
-		P(r,   { r_rrr<O::CAT>(R(TMP1,l+1),R(RDX,l),R(RAX,l)), r_rr1<op_h>(R(RDX,l),R(TMP1,l+1)),    r_rr1<op_l>(R(RAX,l),R(TMP1,l+1)) },    { r_r<O::CLB>(R(FLAGS,l)) });
-		PM(m,  { m_rrr<O::CAT>(R(TMP1,l+1),R(RDX,l),R(RAX,l)), m_rr1<op_h,lm>(R(RDX,l),R(TMP1,l+1)), m_rr1<op_l,lm>(R(RAX,l),R(TMP1,l+1)) }, { m_r<O::CLB>(R(FLAGS,l)) });
+		P(r,   { mco<O::CAT>(R(TMP1,l+1),R(RDX,l),R(RAX,l)),
+				 r_xx1<op_h>(R(RDX,l),R(TMP1,l+1)),
+				 r_xx1<op_l>(R(RAX,l),R(TMP1,l+1)) },
+			   { mco<O::CLB>(R(FLAGS,l)) });
+		PM(m,  { mco<O::CAT>(R(TMP1,l+1),R(RDX,l),R(RAX,l)),
+				 m_xx1<op_h,lm>(R(RDX,l),R(TMP1,l+1)),
+				 m_xx1<op_l,lm>(R(RAX,l),R(TMP1,l+1)) },
+			   { mco<O::CLB>(R(FLAGS,l)) });
 	};
 
 	template <O op>
 	struct P_SHIFT {
-		P(ri,   { rri_123<op>() },           { rri_r1i<O::CMP>(R(FLAGS,l),0) });
-		PM(mi,  { mi_112<op,lm>() },         { mi_r1i<O::CMP,lm>(R(FLAGS,l),0) });
-		P(r1,   { rr_12i<op>(1) },           { rr_r1i<O::CMP>(R(FLAGS,l),0) });
-		PM(m1,  { m_11i<op,lm>(1) },         { m_r1i<O::CMP,lm>(R(FLAGS,l),0) });
-		P(rCL,  { rr_12r<op>(R(RCX,0)) },    { rr_r1i<O::CMP>(R(FLAGS,l),0) });
-		PM(mCL, { m_11r<op,lm>(R(RCX,0)) },  { m_r1i<O::CMP,lm>(R(FLAGS,l),0) });
+		P(ri,   { rri_123<op>() },           { rr_x1x<O::CMP>(R(FLAGS,l),0) });
+		PM(mi,  { mi_112<op,lm>() },         { m_x1x<O::CMP,lm>(R(FLAGS,l),0) });
+		P(r1,   { rr_12x<op>(1) },           { rr_x1x<O::CMP>(R(FLAGS,l),0) });
+		PM(m1,  { m_11x<op,lm>(1) },         { m_x1x<O::CMP,lm>(R(FLAGS,l),0) });
+		P(rCL,  { rr_12x<op>(R(RCX,0)) },    { rr_x1x<O::CMP>(R(FLAGS,l),0) });
+		PM(mCL, { m_11x<op,lm>(R(RCX,0)) },  { m_x1x<O::CMP,lm>(R(FLAGS,l),0) });
 	};
 
 	template <O op>
 	struct P_BITCNT {
-		P(rr,  { rr_12<op>() },    { rr_r2i<O::CMP>(R(FLAGS,l),0) });
-		PM(rm, { rm_12<op,lm>() }, { rm_r2i<O::CMP,lm>(R(FLAGS,l),0) });
+		P(rr,  { rr_12<op>() },    { rr_x2x<O::CMP>(R(FLAGS,l),0) });
+		PM(rm, { rm_12<op,lm>() }, { rm_x2x<O::CMP,lm>(R(FLAGS,l),0) });
 	};
 
 	/* -----------------------------------------------------------------------*/
@@ -98,17 +103,17 @@ namespace SBA::Lift::X86_64 {
 	struct TEST : P_CMP<O::AND> {};
 	struct MUL  : P_MUL<O::UMULH, O::MUL> {};
 	struct IMUL : P_MUL<O::MULH,  O::MUL> {
-		P(rr,  { rrr_123<O::MUL>() },    { rrr_r23<O::CMP>(R(FLAGS,l)) });
-		P(ri,  { rri_123<O::MUL>() },    { rri_r23<O::CMP>(R(FLAGS,l)) });
-		PM(rm, { rrm_123<O::MUL,lm>() }, { rrm_r23<O::CMP,lm>(R(FLAGS,l)) });
+		P(rr,  { rrr_123<O::MUL>() },    { rrr_x23<O::CMP>(R(FLAGS,l)) });
+		P(ri,  { rri_123<O::MUL>() },    { rri_x23<O::CMP>(R(FLAGS,l)) });
+		PM(rm, { rrm_123<O::MUL,lm>() }, { rrm_x23<O::CMP,lm>(R(FLAGS,l)) });
 	};
 	struct DIV  : P_DIV<O::UMOD, O::UDIV> {};
 	struct IDIV : P_DIV<O::MOD,  O::DIV> {};
 	struct INC  : P_STEP<O::ADD, true> {};
 	struct DEC  : P_STEP<O::SUB> {};
 	struct NEG {
-		P(r,   { rr_12<O::NEG>() },   { rr_ri2<O::CMP>(R(FLAGS,l),0) });
-		PM(m,  { m_11<O::NEG,lm>() }, { m_ri1<O::CMP,lm>(R(FLAGS,l),0) });
+		P(r,   { rr_12<O::NEG>() },   { rr_xx2<O::CMP>(R(FLAGS,l),0) });
+		PM(m,  { m_11<O::NEG,lm>() }, { m_xx1<O::CMP,lm>(R(FLAGS,l),0) });
 	};
 	struct NOT {
 		P(r,   { rr_12<O::NOT>() });
@@ -122,26 +127,32 @@ namespace SBA::Lift::X86_64 {
 	struct BSWAP {
 		P(r, { rr_12<O::REV>() });
 	};
+	struct MOVBE {
+		P(rr,  { rr_12<O::REV>() });
+		PM(rm, { rm_12<O::REV,lm>() });
+		PM(mr, { mr_12<O::REV,lm>() });
+	};
 	struct LZCNT  : P_BITCNT<O::CLZ> {};
 	struct TZCNT  : P_BITCNT<O::CTZ> {};
 	struct POPCNT : P_BITCNT<O::POP> {};
 	struct BSF {
-		P(rr,  { rrr_13<O::CTZ>() },    { rrr_r3i<O::CMP>(R(FLAGS,l),0) });
-		PM(rm, { rrm_13<O::CTZ,lm>() }, { rrm_r3i<O::CMP,lm>(R(FLAGS,l),0) });
+		P(rr,  { rrr_13<O::CTZ>() },    { rrr_x3x<O::CMP>(R(FLAGS,l),0) });
+		PM(rm, { rrm_13<O::CTZ,lm>() }, { rrm_x3x<O::CMP,lm>(R(FLAGS,l),0) });
 	};
 	struct BSR {
-		P(rr,  { rrr_r3<O::CLZ>(R(TMP1,l)),    rrr_1ir<O::SUB>((8 << l) - 1,R(TMP1,l)) },    { rrr_r3i<O::CMP>(R(FLAGS,l),0) });
-		PM(rm, { rrm_r3<O::CLZ,lm>(R(TMP1,l)), rrm_1ir<O::SUB,lm>((8 << l) - 1,R(TMP1,l)) }, { rrm_r3i<O::CMP,lm>(R(FLAGS,l),0) });
+		P(rr,  { rrr_x3<O::CLZ>(R(TMP1,l)), rrr_1xx<O::SUB>(bits(l)-1,R(TMP1,l)) },
+			   { rrr_x3x<O::CMP>(R(FLAGS,l),0) });
+		PM(rm, { rrm_x3<O::CLZ,lm>(R(TMP1,l)), rrm_1xx<O::SUB,lm>(bits(l)-1,R(TMP1,l)) },
+			   { rrm_x3x<O::CMP,lm>(R(FLAGS,l),0) });
 	};
 
 	using Mnemonics_ALU = SBA::Util::TypeList<
 		ADD, SUB, AND, OR, XOR, CMP, TEST, ADC, SBB,
 		INC, DEC, NEG, NOT, MUL, IMUL, DIV, IDIV,
-		SHL, SHR, SAR, ROL, ROR, BSWAP,
+		SHL, SHR, SAR, ROL, ROR, BSWAP, MOVBE,
 		LZCNT, TZCNT, POPCNT, BSF, BSR
 	>;
 
-	#undef R
 	#undef PM
 	#undef P
 

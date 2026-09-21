@@ -9,7 +9,7 @@ module;
 #include <utility>
 #include <llvm/MC/MCInstrInfo.h>
 
-export module sba.lift:dispatch_x86_64;
+export module sba.lift:x86_64_dispatch;
 
 import sba.arch;
 import sba.ir;
@@ -18,6 +18,7 @@ import :target;
 import :decode;
 import :cache;
 import :emit;
+import :x86_64_pattern;
 
 namespace SBA::Lift::X86_64 {
 
@@ -142,6 +143,8 @@ namespace SBA::Lift::X86_64 {
 		if (match_prefix(s, "rmb"))  return Suffix::Schema::rmb;
 		if (match_prefix(s, "mb"))   return Suffix::Schema::mb;
 		if (match_prefix(s, "b"))    return Suffix::Schema::mb;
+		if (match_prefix(s, "rmm"))  return Suffix::Schema::m;
+		if (match_prefix(s, "rmr"))  return Suffix::Schema::r;
 		if (match_prefix(s, "rm"))   return Suffix::Schema::rm;
 		if (match_prefix(s, "mr"))   return Suffix::Schema::mr;
 		if (match_prefix(s, "mi"))   return Suffix::Schema::mi;
@@ -327,7 +330,7 @@ namespace SBA::Lift::X86_64 {
 		std::string_view suffix = name.substr(opcode.size());
 		auto s = match_suffix(suffix);
 
-		uint8_t ld = s.llength.d.value_or(0);
+		uint8_t ld = s.llength.d.value_or(3);
 		uint8_t lm = s.llength.m.value_or(ld);
 		bool no_flags = (s.modifier == Suffix::Modifier::NF ||
 						 s.modifier == Suffix::Modifier::NF_ND);

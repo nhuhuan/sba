@@ -8,5 +8,6 @@ target_sources(util
 				${CMAKE_SOURCE_DIR}/modules/util/container.cppm
 				${CMAKE_SOURCE_DIR}/modules/util/wyhash.cppm
 				${CMAKE_SOURCE_DIR}/modules/util/typelist.cppm
+				${CMAKE_SOURCE_DIR}/modules/util/bits.cppm
 				${CMAKE_SOURCE_DIR}/modules/util/util.cppm
 )

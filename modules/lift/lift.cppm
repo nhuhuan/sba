@@ -31,6 +31,9 @@ export namespace SBA::Lift {
 		Cache& cache,
 		const MCInstruction& inst)
 	{
+		if (!inst.valid())
+			return lift_invalid(ctx, cache);
+
 		auto op = lift_target<T>(ctx, cache, inst);
 		return op ? *op : lift_fallback<T>(ctx, cache, inst);
 	}

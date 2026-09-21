@@ -54,7 +54,6 @@ export namespace SBA::IR {
 		/* Arity 3 */                                                         \
 		OP(CADD,       3, "cadd",       "(a + b) + c")                        \
 		OP(CSUB,       3, "csub",       "(a - b) - c")                        \
-		OP(CAS,        3, "cas",        "compare_swap(a, b, c)")              \
 		OP(SELECT_EQ,  3, "select_eq",  "a1  ==  a2    ? b : c")              \
 		OP(SELECT_NE,  3, "select_ne",  "a1  !=  a2    ? b : c")              \
 		OP(SELECT_LT,  3, "select_lt",  "a1  <   a2    ? b : c")              \
@@ -69,16 +68,17 @@ export namespace SBA::IR {
 		OP(SELECT_NS,  3, "select_ns",  "!msb(a1 - a2) ? b : c")              \
 		OP(SELECT_O,   3, "select_o",   " (SMIN <= a1 - a2 <= SMAX) ? b : c") \
 		OP(SELECT_NO,  3, "select_no",  "!(SMIN <= a1 - a2 <= SMAX) ? b : c") \
-		OP(SELECT_P,   3, "select_p",   " (unord(a1) || unord(a2)) ? b : c")  \
-		OP(SELECT_NP,  3, "select_np",  "!(unord(a1) || unord(a2)) ? b : c")
+		OP(SELECT_P,   3, "select_p",   " (unord(a1) || unord(a2))  ? b : c") \
+		OP(SELECT_NP,  3, "select_np",  "!(unord(a1) || unord(a2))  ? b : c")
 
 	enum class Operator : uint8_t {
 		#define DEF_ENUM(name, ari, str, desc) name,
 		OPERATOR_LIST(DEF_ENUM)
 		#undef DEF_ENUM
+		_
 	};
 
-	constexpr uint8_t arity(Operator op) {
+	constexpr uint8_t arity(Operator op) noexcept {
 		switch (op) {
 			#define DEF_ARITY(name, ari, str, desc) case Operator::name: return ari;
 			OPERATOR_LIST(DEF_ARITY)
@@ -164,7 +164,6 @@ export namespace SBA::IR {
 			switch (op) {
 				case Operator::CADD:		return T::addc(a, b, c);
 				case Operator::CSUB:		return T::subc(a, b, c);
-				case Operator::CAS:			return T::cmp_swap(a, b, c);
 				case Operator::SELECT_EQ
 				 ... Operator::SELECT_NP:	return T::select(op, a, b, c);
 				default:					std::unreachable();

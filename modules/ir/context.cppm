@@ -16,44 +16,13 @@ import :semantics;
 
 export namespace SBA::IR {
 
-	struct InstructionTag {
-		uint8_t tag;
-
-		constexpr InstructionTag(uint8_t t) noexcept : tag(t) {}
-
-		constexpr InstructionTag(
-			Instruction::Type type,
-			uint8_t count,
-			uint8_t length) noexcept
-		{
-			auto t = (type != Instruction::Type::STORE) ?
-					 ((uint8_t)type | 0x8) : (count & 0x7);
-			tag = (t << 4) | (length & 0xf);
-		}
-
-		constexpr Instruction::Type type() const noexcept {
-			uint8_t t = tag >> 4;
-			return (t & 0x8) ?
-				   (Instruction::Type)(t & 0x7) : Instruction::Type::STORE;
-		}
-
-		constexpr uint8_t count() const noexcept {
-			uint8_t t = tag >> 4;
-			return (t & 0x8) ? 0 : (t & 0x7);
-		}
-
-		constexpr uint8_t length() const noexcept {
-			return tag & 0xf;
-		}
-	};
-
 	class View;
 
 	struct Context {
-		SBA::Util::PVector<uint8_t,  (1ULL << INST_BITS)> inst;
-		SBA::Util::PVector<uint32_t, (1ULL << IMM_BITS)>  i32;
-		SBA::Util::PVector<uint64_t, (1ULL << IMM_BITS)>  i64;
-		SBA::Util::PVector<Affine,   (1ULL << AFF_BITS)>  aff;
+		SBA::Util::PVector<uint8_t,  (1ULL << REFERENCE_INST)> inst;
+		SBA::Util::PVector<uint32_t, (1ULL << REFERENCE_IMM)>  i32;
+		SBA::Util::PVector<uint64_t, (1ULL << REFERENCE_IMM)>  i64;
+		SBA::Util::PVector<Affine,   (1ULL << REFERENCE_AFF)>  aff;
 
 		View operator[](Instruction i) const noexcept;
 
@@ -140,7 +109,7 @@ export namespace SBA::IR {
 			std::span<const Operator> opcodes,
 			std::span<const Operand> operands) noexcept
 		{
-			InstructionTag t(type, (uint8_t)opcodes.size(), length);
+			Instruction::Tag t(type, (uint8_t)opcodes.size(), length);
 
 			uint64_t h = SBA::Util::wyhash(&t.tag, sizeof(t.tag), 0);
 			if (!opcodes.empty())

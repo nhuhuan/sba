@@ -222,10 +222,10 @@ namespace SBA::Lift {
 			requires (sizeof...(Args) <= MAX_ARITY &&
 			         (std::convertible_to<Args, MCOperand> && ...))
 		constexpr MCOperation(
-			Operator o,
-			MCOperand d,
+			Operator op,
+			MCOperand dst,
 			Args&&... args) noexcept
-			: op(o), dst(d), src{ static_cast<MCOperand>(args)... } {}
+			: op(op), dst(dst), src{ static_cast<MCOperand>(args)... } {}
 	};
 
 	template <Target T, typename... MCOperations>

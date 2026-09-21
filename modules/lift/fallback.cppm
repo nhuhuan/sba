@@ -21,6 +21,10 @@ namespace SBA::Lift {
 	using namespace SBA::IR;
 	using SBA::Arch::Target;
 
+	inline Instruction lift_invalid(Context& ctx, Cache& cache) noexcept {
+		return ctx.encode(cache, Instruction::Type::INVALID, 1, {}, {});
+	}
+
 	template <Target T>
 	inline Instruction lift_fallback(
 		Context& ctx,

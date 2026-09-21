@@ -22,8 +22,8 @@ export namespace SBA::IR {
 		const Context& ctx_;
 		Instruction inst_;
 
-		InstructionTag tag() const noexcept {
-			return InstructionTag(ctx_.inst[inst_.index]);
+		Instruction::Tag tag() const noexcept {
+			return { ctx_.inst[inst_.index] };
 		}
 
 	public:
