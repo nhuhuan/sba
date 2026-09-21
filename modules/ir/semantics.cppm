@@ -51,7 +51,10 @@ export namespace SBA::IR {
 		OP(MAX,        2, "max",        "max(a, b)")                          \
 		OP(ROL,        2, "rol",        "rotate_left(a, b)")                  \
 		OP(ROR,        2, "ror",        "rotate_right(a, b)")                 \
+		OP(S_VAL,      2, "s_val",      "string(a, l)")                       \
 		/* Arity 3 */                                                         \
+		OP(S_EQ,       3, "s_eq",       "string_count_eq(a, b, l)")           \
+		OP(S_NE,       3, "s_ne",       "string_count_ne(a, b, l)")           \
 		OP(CADD,       3, "cadd",       "(a + b) + c")                        \
 		OP(CSUB,       3, "csub",       "(a - b) - c")                        \
 		OP(SELECT_EQ,  3, "select_eq",  "a1  ==  a2    ? b : c")              \
