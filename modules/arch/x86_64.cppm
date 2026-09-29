@@ -394,4 +394,11 @@ export namespace SBA::Arch::X86_64 {
 
 	}
 
+	namespace InterruptVector {
+		inline constexpr uint8_t WINDOWS_SYSCALL     = 0x2E;
+		inline constexpr uint8_t LINUX_SYSCALL       = 0x80;
+		inline constexpr uint8_t DARWIN_BSD_SYSCALL  = 0x80;
+		inline constexpr uint8_t DARWIN_MACH_SYSCALL = 0x81;
+	}
+
 }

@@ -81,18 +81,16 @@ namespace SBA::Lift::X86_64 {
 	inline constexpr Affine M(
 		Reg base,
 		int64_t displacement,
-		uint8_t llength,
-		uint8_t llength_addr = 3) noexcept
+		uint8_t llength) noexcept
 	{
-		return M(base, NONE, 0, displacement, llength, llength_addr);
+		return M(base, NONE, 0, displacement, llength, 3);
 	}
 
 	inline constexpr Affine M(
 		Reg base,
-		uint8_t llength,
-		uint8_t llength_addr = 3) noexcept
+		uint8_t llength) noexcept
 	{
-		return M(base, NONE, 0, 0, llength, llength_addr);
+		return M(base, NONE, 0, 0, llength, 3);
 	}
 
 	inline constexpr bool HAS_REP(MCInstruction inst) noexcept {

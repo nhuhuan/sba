@@ -258,10 +258,10 @@ namespace SBA::Binary {
 				arch = Target::X86_64;
 				break;
 			case llvm::Triple::aarch64:
-				arch = Target::AArch64;
+				arch = Target::ARM64;
 				break;
 			default:
-				arch = Target::Unknown;
+				arch = Target::UNKNOWN;
 				break;
 		}
 	}

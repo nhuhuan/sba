@@ -212,9 +212,8 @@ namespace SBA::Lift {
 	};
 
 	struct MCOperation {
-		Operator op;
-		MCOperand dst;
-		std::array<MCOperand, MAX_ARITY> src;
+		Operator opcode;
+		std::array<MCOperand, MAX_ARITY> operands;
 
 		constexpr MCOperation() noexcept = default;
 
@@ -222,10 +221,9 @@ namespace SBA::Lift {
 			requires (sizeof...(Args) <= MAX_ARITY &&
 			         (std::convertible_to<Args, MCOperand> && ...))
 		constexpr MCOperation(
-			Operator op,
-			MCOperand dst,
+			Operator opcode,
 			Args&&... args) noexcept
-			: op(op), dst(dst), src{ static_cast<MCOperand>(args)... } {}
+			: opcode(opcode), operands{ static_cast<MCOperand>(args)... } {}
 	};
 
 	template <Target T, typename... MCOperations>
@@ -243,10 +241,10 @@ namespace SBA::Lift {
 		auto serialize = [&](auto&& arg) {
 			std::span<const MCOperation> ops(arg);
 			for (const auto& op : ops) {
-				opcodes[opcode_count++] = op.op;
-				operands[operand_count++] = op.dst.encode<T>(ctx, cache, inst);
-				for (size_t i = 0; i < arity(op.op); ++i)
-					operands[operand_count++] = op.src[i].encode<T>(ctx, cache, inst);
+				opcodes[opcode_count++] = op.opcode;
+				for (size_t i = 0; i < arity(op.opcode); ++i)
+					operands[operand_count++] =
+						op.operands[i].encode<T>(ctx, cache, inst);
 			}
 		};
 
@@ -254,7 +252,6 @@ namespace SBA::Lift {
 
 		return ctx.encode(
 			cache,
-			Instruction::Type::STORE,
 			inst.length(),
 			{ opcodes.data(), opcode_count },
 			{ operands.data(), operand_count }

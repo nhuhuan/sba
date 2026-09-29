@@ -104,12 +104,11 @@ export namespace SBA::IR {
 		template <typename C>
 		Instruction encode(
 			C& cache,
-			Instruction::Type type,
 			uint8_t length,
 			std::span<const Operator> opcodes,
 			std::span<const Operand> operands) noexcept
 		{
-			Instruction::Tag t(type, (uint8_t)opcodes.size(), length);
+			Instruction::Tag t((uint8_t)opcodes.size(), length);
 
 			uint64_t h = SBA::Util::wyhash(&t.tag, sizeof(t.tag), 0);
 			if (!opcodes.empty())

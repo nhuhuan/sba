@@ -118,31 +118,31 @@ namespace SBA::Lift::X86_64 {
 		}
 	};
 	struct PUSH {
-		P(r,   { mco<O::VAL>(R(RSP,3),A(RSP,-bytes<int64_t>(l))),
+		P(r,   { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
 		         r_x1<O::VAL>(M(RSP,l)) });
-		P(i,   { mco<O::VAL>(R(RSP,3),A(RSP,-bytes<int64_t>(l))),
+		P(i,   { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
 		         i_x1<O::VAL>(M(RSP,l)) });
-		PM(m,  { mco<O::VAL>(R(RSP,3),A(RSP,-bytes<int64_t>(l))),
+		PM(m,  { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
 		         m_x1<O::VAL,lm>(M(RSP,l)) });
 	};
 	struct POP {
 		P(r,   { r_1x<O::VAL>(M(RSP,l)),
-		         mco<O::VAL>(R(RSP,3),A(RSP,bytes<int64_t>(l))) });
+		         mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
 		PM(m,  { m_1x<O::VAL,lm>(M(RSP,l)),
-		         mco<O::VAL>(R(RSP,3),A(RSP,bytes<int64_t>(l))) });
+		         mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
 	};
 	struct PUSHF {
-		P(_,   { mco<O::VAL>(R(RSP,3),A(RSP,-bytes<int64_t>(l))),
+		P(_,   { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
 		         mco<O::VAL>(M(RSP,l),R(FLAGS,l)) });
 	};
 	struct POPF {
 		P(_,   { mco<O::VAL>(R(FLAGS,l),M(RSP,l)),
-		         mco<O::VAL>(R(RSP,3),A(RSP,bytes<int64_t>(l))) });
+		         mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
 	};
 	struct LEAVE {
-		P(_,   { mco<O::VAL>(R(RSP,3),R(RBP,3)),
+		P(_,   { mco<O::VAL>(R(RSP),R(RBP)),
 		         mco<O::VAL>(R(RBP,l),M(RSP,l)),
-		         mco<O::VAL>(R(RSP,3),A(RSP,bytes<int64_t>(l))) });
+		         mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
 	};
 
 	using Mnemonics_DAT = SBA::Util::TypeList<

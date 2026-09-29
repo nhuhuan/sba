@@ -22,7 +22,7 @@ namespace SBA::Lift {
 	using SBA::Arch::Target;
 
 	inline Instruction lift_invalid(Context& ctx, Cache& cache) noexcept {
-		return ctx.encode(cache, Instruction::Type::INVALID, 1, {}, {});
+		return ctx.encode(cache, 0, {}, {});
 	}
 
 	template <Target T>

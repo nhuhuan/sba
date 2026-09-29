@@ -12,9 +12,8 @@ export import :cache;
 namespace SBA::Lift {
 
 	using namespace SBA::IR;
-	using SBA::Arch::Target;
 
-	template <Target T>
+	template <SBA::Arch::Target T, SBA::Arch::Mode M>
 	std::optional<Instruction> lift_target(
 		Context& ctx,
 		Cache& cache,
@@ -25,7 +24,7 @@ namespace SBA::Lift {
 
 export namespace SBA::Lift {
 
-	template <SBA::Arch::Target T>
+	template <SBA::Arch::Target T, SBA::Arch::Mode M = SBA::Arch::Mode::USER>
 	inline Instruction lift(
 		Context& ctx,
 		Cache& cache,
@@ -34,7 +33,7 @@ export namespace SBA::Lift {
 		if (!inst.valid())
 			return lift_invalid(ctx, cache);
 
-		auto op = lift_target<T>(ctx, cache, inst);
+		auto op = lift_target<T, M>(ctx, cache, inst);
 		return op ? *op : lift_fallback<T>(ctx, cache, inst);
 	}
 

@@ -9,8 +9,13 @@ export namespace SBA::Arch {
 
 	enum class Target : uint8_t {
 		X86_64,
-		AArch64,
-		Unknown
+		ARM64,
+		UNKNOWN
+	};
+
+	enum class Mode : uint8_t {
+		USER,
+		KERNEL
 	};
 
 }

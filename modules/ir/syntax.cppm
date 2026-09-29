@@ -70,44 +70,20 @@ export namespace SBA::IR {
 	};
 
 	struct Instruction {
-		enum class Type : uint8_t {
-			STORE,
-			SYSCALL,
-			FENCE,
-			TRAP,
-			HALT,
-			NOP,
-			INVALID
-		};
-
 		struct Tag {
 			uint8_t tag;
-
 			constexpr Tag(uint8_t raw) noexcept : tag(raw) {}
-
-			constexpr Tag(
-				Instruction::Type type,
-				uint8_t count,
-				uint8_t length) noexcept
-			{
-				auto t = (type != Instruction::Type::STORE) ?
-						 ((uint8_t)type | 0x8) : (count & 0x7);
-				tag = (t << 4) | (length & 0xf);
+			constexpr Tag(uint8_t count, uint8_t length) noexcept {
+				tag = ((count & 0xf) << 4) | (length & 0xf);
 			}
-
-			constexpr Instruction::Type type() const noexcept {
-				uint8_t t = tag >> 4;
-				return (t & 0x8) ?
-					   (Instruction::Type)(t & 0x7) : Instruction::Type::STORE;
-			}
-
 			constexpr uint8_t count() const noexcept {
-				uint8_t t = tag >> 4;
-				return (t & 0x8) ? 0 : (t & 0x7);
+				return (tag >> 4) & 0xf;
 			}
-
 			constexpr uint8_t length() const noexcept {
 				return tag & 0xf;
+			}
+			constexpr bool valid() const noexcept {
+				return length() != 0;
 			}
 		};
 

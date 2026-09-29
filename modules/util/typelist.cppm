@@ -12,6 +12,9 @@ export namespace SBA::Util {
 		size_t start = p.find("T = ") + 4;
 		size_t end = p.find_first_of(";]", start);
 		std::string_view s = p.substr(start, end - start);
+		size_t bracket = s.find('<');
+		if (bracket != std::string_view::npos)
+			s = s.substr(0, bracket);
 		size_t colon = s.rfind("::");
 		return colon == std::string_view::npos ? s : s.substr(colon + 2);
 	}

@@ -106,7 +106,7 @@ namespace SBA::Binary {
 					case OS::DARWIN:  return "x86_64-apple-darwin";
 					default:          return "";
 				}
-			case Target::AArch64:
+			case Target::ARM64:
 				switch (os_) {
 					case OS::LINUX:   return "aarch64-unknown-linux-gnu";
 					case OS::WINDOWS: return "aarch64-pc-win32-coff";

@@ -10,69 +10,83 @@ export namespace SBA::IR {
 
 	#define OPERATOR_LIST(OP)                                                 \
 		/* Arity 0 */                                                         \
-		OP(CLB,        0, "clb",        "clobbered")                          \
-		OP(UNDEF,      0, "undef",      "undefined")                          \
+		OP(HYPERCALL,  0, "hypercall",  "hypervisor_call")                    \
+		OP(SYSCALL,    0, "syscall",    "system_call")                        \
+		OP(SYSRET,     0, "sysret",     "system_ret")                         \
+		OP(ABORT,      0, "abort",      "abort")                              \
+		OP(TRAP,       0, "trap",       "trap")                               \
+		OP(YIELD,      0, "yield",      "yield")                              \
+		OP(DRAIN,      0, "drain",      "drain")                              \
+		OP(WAIT_E,     0, "wait_e",     "wait_for_event")                     \
+		OP(WAIT_I,     0, "wait_i",     "wait_for_interrupt")                 \
+		OP(FENCE_I,    0, "fence_i",    "serializing_instruction")            \
+		OP(FENCE_R,    0, "fence_r",    "memory_barrier_read")                \
+		OP(FENCE_W,    0, "fence_w",    "memory_barrier_write")               \
+		OP(FENCE_RW,   0, "fence_rw",   "memory_barrier_full")                \
 		/* Arity 1 */                                                         \
-		OP(VAL,        1, "val",        "a")                                  \
-		OP(NEG,        1, "neg",        "-a")                                 \
-		OP(NOT,        1, "not",        "~a")                                 \
-		OP(ABS,        1, "abs",        "|a|")                                \
-		OP(REV,        1, "rev",        "reverse_bytes(a)")                   \
-		OP(CLZ,        1, "clz",        "leading_zeros(a)")                   \
-		OP(CTZ,        1, "ctz",        "trailing_zeros(a)")                  \
-		OP(POP,        1, "cbs",        "popcount(a)")                        \
-		OP(ZEXT,       1, "zext",       "zero_extend(a)")                     \
-		OP(SEXT,       1, "sext",       "sign_extend(a)")                     \
-		OP(TRUNC,      1, "trunc",      "truncate(a)")                        \
-		OP(FNEG,       1, "fneg",       "-float(a)")                          \
+		OP(CLB,        1, "clb",        "clobbered")                          \
+		OP(UNDEF,      1, "undef",      "undefined")                          \
 		/* Arity 2 */                                                         \
-		OP(ADD,        2, "add",        "a  +   b")                           \
-		OP(FADD,       2, "fadd",       "a  +f  b")                           \
-		OP(SUB,        2, "sub",        "a  -   b")                           \
-		OP(FSUB,       2, "fsub",       "a  -f  b")                           \
-		OP(MUL,        2, "mul",        "a  *   b")                           \
-		OP(FMUL,       2, "fmul",       "a  *f  b")                           \
-		OP(DIV,        2, "div",        "a  /   b")                           \
-		OP(FDIV,       2, "fdiv",       "a  /f  b")                           \
-		OP(UDIV,       2, "udiv",       "a  /u  b")                           \
-		OP(MOD,        2, "mod",        "a  %   b")                           \
-		OP(UMOD,       2, "umod",       "a  %u  b")                           \
-		OP(AND,        2, "and",        "a  &   b")                           \
-		OP(OR,         2, "or",         "a  |   b")                           \
-		OP(XOR,        2, "xor",        "a  ^   b")                           \
-		OP(CAT,        2, "cat",        "a  ::  b")                           \
-		OP(CMP,        2, "cmp",        "a <=>  b")                           \
-		OP(SHL,        2, "shl",        "a  <<  b")                           \
-		OP(ASHR,       2, "ashr",       "a  >>  b")                           \
-		OP(SHR,        2, "shr",        "a >>u  b")                           \
-		OP(MULH,       2, "mulh",       "high(a * b)")                        \
-		OP(UMULH,      2, "umulh",      "high_u(a * b)")                      \
-		OP(MIN,        2, "min",        "min(a, b)")                          \
-		OP(MAX,        2, "max",        "max(a, b)")                          \
-		OP(ROL,        2, "rol",        "rotate_left(a, b)")                  \
-		OP(ROR,        2, "ror",        "rotate_right(a, b)")                 \
-		OP(S_VAL,      2, "s_val",      "string(a, l)")                       \
+		OP(VAL,        2, "val",        "a")                                  \
+		OP(NEG,        2, "neg",        "-a")                                 \
+		OP(NOT,        2, "not",        "~a")                                 \
+		OP(ABS,        2, "abs",        "|a|")                                \
+		OP(REV,        2, "rev",        "reverse_bytes(a)")                   \
+		OP(CLZ,        2, "clz",        "leading_zeros(a)")                   \
+		OP(CTZ,        2, "ctz",        "trailing_zeros(a)")                  \
+		OP(POP,        2, "cbs",        "pop_count(a)")                       \
+		OP(ZEXT,       2, "zext",       "zero_extend(a)")                     \
+		OP(SEXT,       2, "sext",       "sign_extend(a)")                     \
+		OP(TRUNC,      2, "trunc",      "truncate(a)")                        \
+		OP(FNEG,       2, "fneg",       "-float(a)")                          \
 		/* Arity 3 */                                                         \
-		OP(S_EQ,       3, "s_eq",       "string_count_eq(a, b, l)")           \
-		OP(S_NE,       3, "s_ne",       "string_count_ne(a, b, l)")           \
-		OP(CADD,       3, "cadd",       "(a + b) + c")                        \
-		OP(CSUB,       3, "csub",       "(a - b) - c")                        \
-		OP(SELECT_EQ,  3, "select_eq",  "a1  ==  a2    ? b : c")              \
-		OP(SELECT_NE,  3, "select_ne",  "a1  !=  a2    ? b : c")              \
-		OP(SELECT_LT,  3, "select_lt",  "a1  <   a2    ? b : c")              \
-		OP(SELECT_LTU, 3, "select_ltu", "a1  <u  a2    ? b : c")              \
-		OP(SELECT_LE,  3, "select_le",  "a1  <=  a2    ? b : c")              \
-		OP(SELECT_LEU, 3, "select_leu", "a1  <=u a2    ? b : c")              \
-		OP(SELECT_GT,  3, "select_gt",  "a1  >   a2    ? b : c")              \
-		OP(SELECT_GTU, 3, "select_gtu", "a1  >u  a2    ? b : c")              \
-		OP(SELECT_GE,  3, "select_ge",  "a1  >=  a2    ? b : c")              \
-		OP(SELECT_GEU, 3, "select_geu", "a1  >=u a2    ? b : c")              \
-		OP(SELECT_S,   3, "select_s",   " msb(a1 - a2) ? b : c")              \
-		OP(SELECT_NS,  3, "select_ns",  "!msb(a1 - a2) ? b : c")              \
-		OP(SELECT_O,   3, "select_o",   " (SMIN <= a1 - a2 <= SMAX) ? b : c") \
-		OP(SELECT_NO,  3, "select_no",  "!(SMIN <= a1 - a2 <= SMAX) ? b : c") \
-		OP(SELECT_P,   3, "select_p",   " (unord(a1) || unord(a2))  ? b : c") \
-		OP(SELECT_NP,  3, "select_np",  "!(unord(a1) || unord(a2))  ? b : c")
+		OP(ADD,        3, "add",        "a  +   b")                           \
+		OP(FADD,       3, "fadd",       "a  +f  b")                           \
+		OP(SUB,        3, "sub",        "a  -   b")                           \
+		OP(FSUB,       3, "fsub",       "a  -f  b")                           \
+		OP(MUL,        3, "mul",        "a  *   b")                           \
+		OP(FMUL,       3, "fmul",       "a  *f  b")                           \
+		OP(DIV,        3, "div",        "a  /   b")                           \
+		OP(FDIV,       3, "fdiv",       "a  /f  b")                           \
+		OP(UDIV,       3, "udiv",       "a  /u  b")                           \
+		OP(MOD,        3, "mod",        "a  %   b")                           \
+		OP(UMOD,       3, "umod",       "a  %u  b")                           \
+		OP(AND,        3, "and",        "a  &   b")                           \
+		OP(OR,         3, "or",         "a  |   b")                           \
+		OP(XOR,        3, "xor",        "a  ^   b")                           \
+		OP(CAT,        3, "cat",        "a  ::  b")                           \
+		OP(CMP,        3, "cmp",        "a <=>  b")                           \
+		OP(SHL,        3, "shl",        "a  <<  b")                           \
+		OP(ASHR,       3, "ashr",       "a  >>  b")                           \
+		OP(SHR,        3, "shr",        "a >>u  b")                           \
+		OP(MULH,       3, "mulh",       "high(a * b)")                        \
+		OP(UMULH,      3, "umulh",      "high_u(a * b)")                      \
+		OP(MIN,        3, "min",        "min(a, b)")                          \
+		OP(MAX,        3, "max",        "max(a, b)")                          \
+		OP(ROL,        3, "rol",        "rotate_left(a, b)")                  \
+		OP(ROR,        3, "ror",        "rotate_right(a, b)")                 \
+		OP(S_VAL,      3, "s_val",      "string(a, l)")                       \
+		/* Arity 4 */                                                         \
+		OP(S_EQ,       4, "s_eq",       "count_while(a == b, l)")             \
+		OP(S_NE,       4, "s_ne",       "count_while(a != b, l)")             \
+		OP(CADD,       4, "cadd",       "(a + b) + c")                        \
+		OP(CSUB,       4, "csub",       "(a - b) - c")                        \
+		OP(SELECT_EQ,  4, "select_eq",  "a1  ==  a2    ? b : c")              \
+		OP(SELECT_NE,  4, "select_ne",  "a1  !=  a2    ? b : c")              \
+		OP(SELECT_LT,  4, "select_lt",  "a1  <   a2    ? b : c")              \
+		OP(SELECT_LTU, 4, "select_ltu", "a1  <u  a2    ? b : c")              \
+		OP(SELECT_LE,  4, "select_le",  "a1  <=  a2    ? b : c")              \
+		OP(SELECT_LEU, 4, "select_leu", "a1  <=u a2    ? b : c")              \
+		OP(SELECT_GT,  4, "select_gt",  "a1  >   a2    ? b : c")              \
+		OP(SELECT_GTU, 4, "select_gtu", "a1  >u  a2    ? b : c")              \
+		OP(SELECT_GE,  4, "select_ge",  "a1  >=  a2    ? b : c")              \
+		OP(SELECT_GEU, 4, "select_geu", "a1  >=u a2    ? b : c")              \
+		OP(SELECT_S,   4, "select_s",   " msb(a1 - a2) ? b : c")              \
+		OP(SELECT_NS,  4, "select_ns",  "!msb(a1 - a2) ? b : c")              \
+		OP(SELECT_O,   4, "select_o",   " (SMIN <= a1 - a2 <= SMAX) ? b : c") \
+		OP(SELECT_NO,  4, "select_no",  "!(SMIN <= a1 - a2 <= SMAX) ? b : c") \
+		OP(SELECT_P,   4, "select_p",   " (unord(a1) || unord(a2))  ? b : c") \
+		OP(SELECT_NP,  4, "select_np",  "!(unord(a1) || unord(a2))  ? b : c")
 
 	enum class Operator : uint8_t {
 		#define DEF_ENUM(name, ari, str, desc) name,
@@ -103,15 +117,15 @@ export namespace SBA::IR {
 	T evaluate(Operator op, Args&&... args) {
 		auto&& tuple = std::forward_as_tuple(std::forward<Args>(args)...);
 
-		if constexpr (sizeof...(Args) == 0) {
+		if constexpr (sizeof...(Args) == 1) {
 			switch (op) {
 				case Operator::CLB:			return T::clb();
 				case Operator::UNDEF:		return T::undef();
 				default:					std::unreachable();
 			}
 		}
-		else if constexpr (sizeof...(Args) == 1) {
-			auto&& a = std::get<0>(tuple);
+		else if constexpr (sizeof...(Args) == 2) {
+			auto&& a = std::get<1>(tuple);
 			switch (op) {
 				case Operator::VAL:			return a;
 				case Operator::NEG:			return -a;
@@ -128,9 +142,9 @@ export namespace SBA::IR {
 				default:					std::unreachable();
 			}
 		}
-		else if constexpr (sizeof...(Args) == 2) {
-			auto&& a = std::get<0>(tuple);
-			auto&& b = std::get<1>(tuple);
+		else if constexpr (sizeof...(Args) == 3) {
+			auto&& a = std::get<1>(tuple);
+			auto&& b = std::get<2>(tuple);
 			switch (op) {
 				case Operator::ADD:			return a + b;
 				case Operator::FADD:		return T::fadd(a, b);
@@ -160,10 +174,10 @@ export namespace SBA::IR {
 				default:					std::unreachable();
 			}
 		}
-		else if constexpr (sizeof...(Args) == 3) {
-			auto&& a = std::get<0>(tuple);
-			auto&& b = std::get<1>(tuple);
-			auto&& c = std::get<2>(tuple);
+		else if constexpr (sizeof...(Args) == 4) {
+			auto&& a = std::get<1>(tuple);
+			auto&& b = std::get<2>(tuple);
+			auto&& c = std::get<3>(tuple);
 			switch (op) {
 				case Operator::CADD:		return T::addc(a, b, c);
 				case Operator::CSUB:		return T::subc(a, b, c);
@@ -184,6 +198,6 @@ export namespace SBA::IR {
 	}();
 
 	inline constexpr size_t MAX_OPERATIONS = 7;
-	inline constexpr size_t MAX_OPERANDS = MAX_OPERATIONS * (1 + MAX_ARITY);
+	inline constexpr size_t MAX_OPERANDS = MAX_OPERATIONS * MAX_ARITY;
 
 }

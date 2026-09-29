@@ -37,7 +37,7 @@ namespace SBA::Lift {
 				LLVMInitializeX86Target();
 				LLVMInitializeX86TargetMC();
 				LLVMInitializeX86Disassembler();
-			} else if constexpr (T == Target::AArch64) {
+			} else if constexpr (T == Target::ARM64) {
 				LLVMInitializeAArch64TargetInfo();
 				LLVMInitializeAArch64Target();
 				LLVMInitializeAArch64TargetMC();
@@ -86,17 +86,17 @@ namespace SBA::Lift {
 				);
 				break;
 			}
-			case Target::AArch64: {
-				initialize_target<Target::AArch64>(triple);
+			case Target::ARM64: {
+				initialize_target<Target::ARM64>(triple);
 				context = std::make_unique<llvm::MCContext>(
 					llvm::Triple(triple),
-					info_asm<Target::AArch64>,
-					info_reg<Target::AArch64>,
-					info_cpu<Target::AArch64>
+					info_asm<Target::ARM64>,
+					info_reg<Target::ARM64>,
+					info_cpu<Target::ARM64>
 				);
 				disassembler.reset(
-					target<Target::AArch64>->createMCDisassembler(
-						*info_cpu<Target::AArch64>,
+					target<Target::ARM64>->createMCDisassembler(
+						*info_cpu<Target::ARM64>,
 						*context
 					)
 				);

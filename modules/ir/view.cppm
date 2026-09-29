@@ -12,9 +12,17 @@ import :context;
 export namespace SBA::IR {
 
 	struct Operation {
-		Operator op;
-		Operand dst;
-		std::span<const Operand> src;
+		Operator opcode;
+		std::span<const Operand> operands;
+
+		constexpr Operand dst() const noexcept {
+			return operands.empty() ? Operand{} : operands.front();
+		}
+
+		constexpr std::span<const Operand> src() const noexcept {
+			return operands.size() > 1 ? operands.subspan(1) :
+										 std::span<const Operand>{};
+		}
 	};
 
 	class View {
@@ -30,8 +38,8 @@ export namespace SBA::IR {
 		View(const Context& ctx, Instruction inst) noexcept
 			: ctx_(ctx), inst_(inst) {}
 
-		Instruction::Type type() const noexcept {
-			return tag().type();
+		bool valid() const noexcept {
+			return tag().valid();
 		}
 
 		uint8_t count() const noexcept {
@@ -48,16 +56,15 @@ export namespace SBA::IR {
 			uint8_t index;
 
 			Operation operator*() const noexcept {
-				Operator op = opcode_ptr[index];
+				Operator opcode = opcode_ptr[index];
 				return Operation {
-					.op  = op,
-					.dst = *operand_ptr,
-					.src = std::span(operand_ptr + 1, arity(op))
+					.opcode   = opcode,
+					.operands = std::span(operand_ptr, arity(opcode))
 				};
 			}
 
 			Iterator& operator++() noexcept {
-				operand_ptr += 1 + arity(opcode_ptr[index]);
+				operand_ptr += arity(opcode_ptr[index]);
 				index++;
 				return *this;
 			}

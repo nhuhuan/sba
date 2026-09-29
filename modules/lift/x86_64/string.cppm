@@ -19,17 +19,17 @@ namespace SBA::Lift::X86_64 {
 		{
 			if (HAS_REP(inst)) {
 				static constexpr MCO ops[] = {
-					mco<O::S_VAL>(M(RDI,lm),M(RSI,lm),R(RCX,3)),
-					mco<O::VAL>(R(RDI,3),A(RDI,RCX,lm)),
-					mco<O::VAL>(R(RSI,3),A(RSI,RCX,lm)),
-					mco<O::VAL>(R(RCX,3),0ULL)
+					mco<O::S_VAL>(M(RDI,lm),M(RSI,lm),R(RCX)),
+					mco<O::VAL>(R(RDI),A(RDI,RCX,lm)),
+					mco<O::VAL>(R(RSI),A(RSI,RCX,lm)),
+					mco<O::VAL>(R(RCX),0ULL)
 				};
 				return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 			}
 			static constexpr MCO ops[] = {
 				mco<O::VAL>(M(RDI,lm),M(RSI,lm)),
-				mco<O::VAL>(R(RDI,3),A(RDI,bytes<int64_t>(lm))),
-				mco<O::VAL>(R(RSI,3),A(RSI,bytes<int64_t>(lm)))
+				mco<O::VAL>(R(RDI),A(RDI,bytes<int64_t>(lm))),
+				mco<O::VAL>(R(RSI),A(RSI,bytes<int64_t>(lm)))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -41,10 +41,10 @@ namespace SBA::Lift::X86_64 {
 		static Instruction rep(Context& ctx, Cache& cache, const MCInstruction& inst)
 		{
 			static constexpr MCO ops[] = {
-				mco<s_op>(R(TMP1,3),M(RSI,lm),M(RDI,lm),R(RCX,3)),
-				mco<O::VAL>(R(RSI,3),A(RSI,TMP1,lm)),
-				mco<O::VAL>(R(RDI,3),A(RDI,TMP1,lm)),
-				mco<O::SUB>(R(RCX,3),R(RCX,3),R(TMP1,3)),
+				mco<s_op>(R(TMP1),M(RSI,lm),M(RDI,lm),R(RCX)),
+				mco<O::VAL>(R(RSI),A(RSI,TMP1,lm)),
+				mco<O::VAL>(R(RDI),A(RDI,TMP1,lm)),
+				mco<O::SUB>(R(RCX),R(RCX),R(TMP1)),
 				mco<O::CMP>(R(FLAGS,lm),M(RSI,-bytes<int64_t>(lm),lm),
 				                        M(RDI,-bytes<int64_t>(lm),lm))
 			};
@@ -57,8 +57,8 @@ namespace SBA::Lift::X86_64 {
 			if (HAS_REPNE(inst)) return rep<O::S_NE>(ctx, cache, inst);
 			if (HAS_REPE(inst))  return rep<O::S_EQ>(ctx, cache, inst);
 			static constexpr MCO ops[] = {
-				mco<O::VAL>(R(RSI,3),A(RSI,bytes<int64_t>(lm))),
-				mco<O::VAL>(R(RDI,3),A(RDI,bytes<int64_t>(lm))),
+				mco<O::VAL>(R(RSI),A(RSI,bytes<int64_t>(lm))),
+				mco<O::VAL>(R(RDI),A(RDI,bytes<int64_t>(lm))),
 				mco<O::CMP>(R(FLAGS,lm),M(RSI,-bytes<int64_t>(lm),lm),
 				                        M(RDI,-bytes<int64_t>(lm),lm))
 			};
@@ -73,15 +73,15 @@ namespace SBA::Lift::X86_64 {
 		{
 			if (HAS_REP(inst)) {
 				static constexpr MCO ops[] = {
-					mco<O::S_VAL>(M(RDI,lm),R(RAX,lm),R(RCX,3)),
-					mco<O::VAL>(R(RDI,3),A(RDI,RCX,lm)),
-					mco<O::VAL>(R(RCX,3),0ULL)
+					mco<O::S_VAL>(M(RDI,lm),R(RAX,lm),R(RCX)),
+					mco<O::VAL>(R(RDI),A(RDI,RCX,lm)),
+					mco<O::VAL>(R(RCX),0ULL)
 				};
 				return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 			}
 			static constexpr MCO ops[] = {
 				mco<O::VAL>(M(RDI,lm),R(RAX,lm)),
-				mco<O::VAL>(R(RDI,3),A(RDI,bytes<int64_t>(lm)))
+				mco<O::VAL>(R(RDI),A(RDI,bytes<int64_t>(lm)))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -95,14 +95,14 @@ namespace SBA::Lift::X86_64 {
 			if (HAS_REP(inst)) {
 				static constexpr MCO ops[] = {
 					mco<O::VAL>(R(RAX,lm),M(RSI,RCX,lm,-bytes<int64_t>(lm),lm)),
-					mco<O::VAL>(R(RSI,3),A(RSI,RCX,lm)),
-					mco<O::VAL>(R(RCX,3),0ULL)
+					mco<O::VAL>(R(RSI),A(RSI,RCX,lm)),
+					mco<O::VAL>(R(RCX),0ULL)
 				};
 				return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 			}
 			static constexpr MCO ops[] = {
 				mco<O::VAL>(R(RAX,lm),M(RSI,lm)),
-				mco<O::VAL>(R(RSI,3),A(RSI,bytes<int64_t>(lm)))
+				mco<O::VAL>(R(RSI),A(RSI,bytes<int64_t>(lm)))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -114,9 +114,9 @@ namespace SBA::Lift::X86_64 {
 		static Instruction rep(Context& ctx, Cache& cache, const MCInstruction& inst)
 		{
 			static constexpr MCO ops[] = {
-				mco<s_op>(R(TMP1,3),R(RAX,lm),M(RDI,lm),R(RCX,3)),
-				mco<O::VAL>(R(RDI,3),A(RDI,TMP1,lm)),
-				mco<O::SUB>(R(RCX,3),R(RCX,3),R(TMP1,3)),
+				mco<s_op>(R(TMP1),R(RAX,lm),M(RDI,lm),R(RCX)),
+				mco<O::VAL>(R(RDI),A(RDI,TMP1,lm)),
+				mco<O::SUB>(R(RCX),R(RCX),R(TMP1)),
 				mco<O::CMP>(R(FLAGS,lm),R(RAX,lm),
 				                        M(RDI,-bytes<int64_t>(lm),lm))
 			};
@@ -129,7 +129,7 @@ namespace SBA::Lift::X86_64 {
 			if (HAS_REPNE(inst)) return rep<O::S_NE>(ctx, cache, inst);
 			if (HAS_REPE(inst))  return rep<O::S_EQ>(ctx, cache, inst);
 			static constexpr MCO ops[] = {
-				mco<O::VAL>(R(RDI,3),A(RDI,bytes<int64_t>(lm))),
+				mco<O::VAL>(R(RDI),A(RDI,bytes<int64_t>(lm))),
 				mco<O::CMP>(R(FLAGS,lm),R(RAX,lm),M(RDI,-bytes<int64_t>(lm),lm))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
