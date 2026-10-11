@@ -17,6 +17,7 @@ import :x86_64_alu;
 import :x86_64_control;
 import :x86_64_string;
 import :x86_64_system;
+import :x86_64_vector;
 import :x86_64_hypervisor;
 import :x86_64_legacy;
 
@@ -42,6 +43,7 @@ namespace SBA::Lift {
 							Mnemonics_STR{},
 							Mnemonics_CTL{},
 							Mnemonics_SYS<M>{},
+							Mnemonics_VEC{},
 							Mnemonics_HPV<M>{},
 							Mnemonics_LGC{});
 			return rules;

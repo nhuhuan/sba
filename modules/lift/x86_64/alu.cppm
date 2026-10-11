@@ -27,6 +27,21 @@ namespace SBA::Lift::X86_64 {
 		PM(rm,  { rrm_123<op,lm>() }, { rrm_x23<O::CMP,lm,neg>(R(FLAGS,l)) });
 		PM(mr,  { mr_112<op,lm>() },  { mr_x12<O::CMP,lm,neg>(R(FLAGS,l)) });
 		PM(mi,  { mi_112<op,lm>() },  { mi_x12<O::CMP,lm,neg>(R(FLAGS,l)) });
+		template <>
+		constexpr Pattern rr<2> = {
+			{ rrr_123<op>(),mco<O::ZEXT>(r(0,3),r(0,2)) },
+			{ rrr_x23<O::CMP,neg>(R(FLAGS,2)) }
+		};
+		template <>
+		constexpr Pattern ri<2> = {
+			{ rri_123<op>(),mco<O::ZEXT>(r(0,3),r(0,2)) },
+			{ rri_x23<O::CMP,neg>(R(FLAGS,2)) }
+		};
+		template <>
+		constexpr Pattern rm<2, 2> = {
+			{ rrm_123<op,2>(),mco<O::ZEXT>(r(0,3),r(0,2)) },
+			{ rrm_x23<O::CMP,2,neg>(R(FLAGS,2)) }
+		};
 	};
 
 	template <O op, bool neg = false>
@@ -36,6 +51,20 @@ namespace SBA::Lift::X86_64 {
 		PM(rm,  { rrm_123x<op,lm>(R(FLAGS,l)) }, { rrm_x23<O::CMP,lm,neg>(R(FLAGS,l)) });
 		PM(mr,  { mr_112x<op,lm>(R(FLAGS,l)) },  { mr_x12<O::CMP,lm,neg>(R(FLAGS,l)) });
 		PM(mi,  { mi_112x<op,lm>(R(FLAGS,l)) },  { mi_x12<O::CMP,lm,neg>(R(FLAGS,l)) });
+		template <>
+		constexpr Pattern rr<2> = {
+			{ rrr_123x<op>(R(FLAGS,2)),mco<O::ZEXT>(r(0,3),r(0,2)) },
+			{ rrr_x23<O::CMP,neg>(R(FLAGS,2)) }
+		};
+		template <>
+		constexpr Pattern ri<2> = {
+			{ rri_123x<op>(R(FLAGS,2)),mco<O::ZEXT>(r(0,3),r(0,2)) },
+			{ rri_x23<O::CMP,neg>(R(FLAGS,2)) }
+		};
+		template <>
+		constexpr Pattern rm<2,2> = {
+			{ rrm_123x<op,2>(R(FLAGS,2)),mco<O::ZEXT>(r(0,3),r(0,2)) },
+			{ rrm_x23<O::CMP,2,neg>(R(FLAGS,2)) } };
 	};
 
 	template <O op, bool neg = false>

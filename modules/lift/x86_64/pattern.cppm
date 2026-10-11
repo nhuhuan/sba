@@ -24,12 +24,12 @@ namespace SBA::Lift::X86_64 {
 	using a = DynamicAffine;
 	using m = DynamicMemory;
 
-	inline constexpr Operand R(Reg reg, uint8_t llength = 3) noexcept {
+	inline constexpr Operand R(Reg reg, uint8_t llength = 3, uint8_t offset = 0) noexcept {
 		return {
 			.r = {
 				(uint32_t)SBA::IR::Operand::Type::REGISTER,
 				(uint32_t)reg,
-				0,
+				offset,
 				llength,
 				0
 			}
@@ -159,13 +159,13 @@ namespace SBA::Lift::X86_64 {
 	}
 
 	template <O op>
-	constexpr MCO rm_x1(MCOperand x) noexcept {
+	constexpr MCO rrm_x1(MCOperand x) noexcept {
 		return { op, x, r(0) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rm_2x(MCOperand x) noexcept {
-		return { op, m(1, lm), x };
+	constexpr MCO mr_x1(MCOperand x) noexcept {
+		return { op, x, m(0, lm) };
 	}
 
 	template <O op, uint8_t lm>
@@ -246,6 +246,11 @@ namespace SBA::Lift::X86_64 {
 	}
 
 	/* 3. Binary ALU */
+
+	template <O op>
+	constexpr MCO rr_112() noexcept {
+		return { op, r(0), r(0), r(1) };
+	}
 
 	template <O op>
 	constexpr MCO rrr_123() noexcept {
@@ -390,6 +395,11 @@ namespace SBA::Lift::X86_64 {
 	}
 
 	template <O op, uint8_t lm, bool neg = false>
+	constexpr MCO rrm_x31(MCOperand x) noexcept {
+		return { op, x, m(2, lm), neg ? -r(0) : r(0) };
+	}
+
+	template <O op, uint8_t lm, bool neg = false>
 	constexpr MCO m_x1x(MCOperand x1, MCOperand x2) noexcept {
 		return { op, x1, m(0, lm), neg ? -x2 : x2 };
 	}
@@ -401,13 +411,28 @@ namespace SBA::Lift::X86_64 {
 
 	/* 5. Atomic / Exchange */
 
+	template <O op, uint8_t lm>
+	constexpr MCO rrm_3x(MCOperand x) noexcept {
+		return { op, m(2, lm), x };
+	}
+
+	template <O op>
+	constexpr MCO rrm_1x(MCOperand x) noexcept {
+		return { op, r(0), x };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCO rrm_331() noexcept {
+		return { op, m(2, lm), m(2, lm), r(0) };
+	}
+
 	template <O op>
 	constexpr MCO rr_1x2x(MCOperand x1, MCOperand x2) noexcept {
 		return { op, r(0), x1, r(1), x2 };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rm_1x2x(MCOperand x1, MCOperand x2) noexcept {
+	constexpr MCO mr_1x2x(MCOperand x1, MCOperand x2) noexcept {
 		return { op, m(0, lm), x1, r(5), x2 };
 	}
 

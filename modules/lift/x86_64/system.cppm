@@ -22,8 +22,24 @@ namespace SBA::Lift::X86_64 {
 
 
 	struct P_NOOP {
-		P(_, {});
-		P(r, {});
+		P(_,  {});
+		P(r,  {});
+		P(rr, {});
+	};
+
+	struct P_ABORT {
+		P(_,  { mco<O::ABORT>() });
+		P(r,  { mco<O::ABORT>() });
+		P(rr, { mco<O::ABORT>() });
+	};
+
+	struct P_DRAIN {
+		P(_, { mco<O::DRAIN>() });
+	};
+
+	struct P_WAIT_E {
+		P(_,  { mco<O::WAIT_E>() });
+		P(rr, { mco<O::WAIT_E>() });
 	};
 
 	struct P_UD1 {
@@ -107,23 +123,45 @@ namespace SBA::Lift::X86_64 {
 		       mco<O::VAL>(M(RSP,32,1),R(SS,1)),
 		       mco<O::TRAP>() });
 	};
-	struct INT1 : INT3 {};
+	struct INT1  : INT3 {};
+	struct ICEBP : INT3 {};
 	template <SBA::Arch::Mode M>
 	struct HLT;
-		template <>
-		struct HLT<SBA::Arch::Mode::USER> {
-			P(_, { mco<O::ABORT>() });
-		};
-		template <>
-		struct HLT<SBA::Arch::Mode::KERNEL> {
+		template <> struct HLT<SBA::Arch::Mode::USER>   : P_ABORT {};
+		template <> struct HLT<SBA::Arch::Mode::KERNEL> {
 			P(_, { mco<O::WAIT_I>() });
 		};
+	template <SBA::Arch::Mode M>
+	struct MWAIT;
+		template <> struct MWAIT<SBA::Arch::Mode::USER>   : P_ABORT {};
+		template <> struct MWAIT<SBA::Arch::Mode::KERNEL> : P_WAIT_E {};
+	template <SBA::Arch::Mode M>
+	struct MWAITX;
+		template <> struct MWAITX<SBA::Arch::Mode::USER>   : P_ABORT {};
+		template <> struct MWAITX<SBA::Arch::Mode::KERNEL> : P_WAIT_E {};
+	template <SBA::Arch::Mode M>
+	struct MONITOR;
+		template <> struct MONITOR<SBA::Arch::Mode::USER>   : P_ABORT {};
+		template <> struct MONITOR<SBA::Arch::Mode::KERNEL> : P_NOOP {};
+	template <SBA::Arch::Mode M>
+	struct MONITORX;
+		template <> struct MONITORX<SBA::Arch::Mode::USER>   : P_ABORT {};
+		template <> struct MONITORX<SBA::Arch::Mode::KERNEL> : P_NOOP {};
+
+	struct UMWAIT   : P_WAIT_E {};
+	struct TPAUSE   : P_WAIT_E {};
+	struct UMONITOR : P_NOOP {};
+
+	struct CLFLUSHOPT : P_DRAIN {};
+	struct CLWB       : P_DRAIN {};
+	struct INVD       : P_DRAIN {};
+	struct WBINVD     : P_DRAIN {};
+	struct WBNOINVD   : P_DRAIN {};
+
 	struct PAUSE {
 		P(_, { mco<O::YIELD>() });
 	};
-	struct TRAP {
-		P(_, { mco<O::ABORT>() });
-	};
+	struct TRAP : P_ABORT {};
 	struct LFENCE {
 		P(_, { mco<O::FENCE_R>() });
 	};
@@ -132,6 +170,15 @@ namespace SBA::Lift::X86_64 {
 	};
 	struct MFENCE {
 		P(_, { mco<O::FENCE_RW>() });
+	};
+	struct SERIALIZE {
+		P(_, { mco<O::FENCE_I>() });
+	};
+	struct CPUID {
+		P(_, { mco<O::FENCE_I>() });
+	};
+	struct CLFLUSH {
+		P(_, { mco<O::FENCE_I>() });
 	};
 	struct UD1W  : P_UD1 {};
 	struct UD1L  : P_UD1 {};
@@ -146,10 +193,15 @@ namespace SBA::Lift::X86_64 {
 	using Mnemonics_SYS = SBA::Util::TypeList<
 		SYSCALL, SYSENTER, VMCALL, VMMCALL,
 		SYSRET, SYSEXIT, IRET, UIRET,
-		INT, INT1, INT3,
+		INT, INT1, INT3, ICEBP,
 		UD1W, UD1L, UD1Q,
 		NOOP, NOOPW, NOOPL, NOOPQ, FNOP,
 		LFENCE, SFENCE, MFENCE,
+		SERIALIZE, CPUID, CLFLUSH,
+		CLFLUSHOPT, CLWB,
+		INVD, WBINVD, WBNOINVD,
+		UMWAIT, TPAUSE, UMONITOR,
+		MWAIT<M>, MWAITX<M>, MONITOR<M>, MONITORX<M>,
 		TRAP,
 		HLT<M>,
 		PAUSE

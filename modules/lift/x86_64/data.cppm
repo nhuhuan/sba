@@ -21,7 +21,7 @@ namespace SBA::Lift::X86_64 {
 		static constexpr Pattern Suffix = { __VA_ARGS__ }
 
 	template <O op>
-	struct P_MOV {
+	struct P_MOV_EXT {
 		P(rr,  { rr_12<op>() });
 		PM(rm, { rm_12<op,lm>() });
 	};
@@ -40,13 +40,21 @@ namespace SBA::Lift::X86_64 {
 
 	/* -----------------------------------------------------------------------*/
 
-	struct MOV : P_MOV<O::VAL> {
+	struct MOV {
+		P(rr,  { rr_12<O::VAL>() });
 		P(ri,  { ri_12<O::VAL>() });
+		PM(rm, { rm_12<O::VAL,lm>() });
 		PM(mr, { mr_12<O::VAL,lm>() });
 		PM(mi, { mi_12<O::VAL,lm>() });
+		template <>
+		constexpr Pattern rr<2> = { { mco<O::ZEXT>(r(0,3),r(1,2)) } };
+		template <>
+		constexpr Pattern ri<2> = { { mco<O::ZEXT>(r(0,3),i(1)) } };
+		template <>
+		constexpr Pattern rm<2,2> = { { mco<O::ZEXT>(r(0,3),m(1,2)) } };
 	};
-	struct MOVSX : P_MOV<O::SEXT> {};
-	struct MOVZX : P_MOV<O::ZEXT> {};
+	struct MOVSX : P_MOV_EXT<O::SEXT> {};
+	struct MOVZX : P_MOV_EXT<O::ZEXT> {};
 	struct CBW  : P_SEXT_A<1> {};
 	struct CWDE : P_SEXT_A<2> {};
 	struct CDQE : P_SEXT_A<3> {};
@@ -60,22 +68,56 @@ namespace SBA::Lift::X86_64 {
 		P(rr,  { rr_x1<O::VAL>(R(TMP1,l)),
 				 rr_12<O::VAL>(),
 				 rr_2x<O::VAL>(R(TMP1,l)) });
-		PM(rm, { rm_x1<O::VAL>(R(TMP1,l)),
-				 rm_12<O::VAL,lm>(),
-				 rm_2x<O::VAL,lm>(R(TMP1,l)) });
+		PM(rm, { rrm_x1<O::VAL>(R(TMP1,l)),
+				 rrm_13<O::VAL,lm>(),
+				 rrm_3x<O::VAL,lm>(R(TMP1,l)) });
 		P(ar,  { r_x1<O::VAL>(R(TMP1,l)),
 				 r_1x<O::VAL>(R(RAX,l)),
 				 mco<O::VAL>(R(RAX,l),R(TMP1,l)) });
 	};
 	struct CMPXCHG {
+		P(rr,  { rr_x1<O::VAL>(R(TMP3,l)),
+				 mco<O::CMP>(R(FLAGS,l),R(TMP3,l),R(RAX,l)),
+				 rr_1x2x<O::SELECT_EQ>(R(FLAGS,l),R(TMP3,l)),
+				 mco<O::SELECT_EQ>(R(RAX,l),R(FLAGS,l),R(RAX,l),R(TMP3,l)) });
+		PM(rm, { mr_x1<O::VAL,lm>(R(TMP3,l)),
+				 mco<O::CMP>(R(FLAGS,l),R(TMP3,l),R(RAX,l)),
+				 mr_1x2x<O::SELECT_EQ,lm>(R(FLAGS,l),R(TMP3,l)),
+				 mco<O::SELECT_EQ>(R(RAX,l),R(FLAGS,l),R(RAX,l),R(TMP3,l)) });
+	};
+	struct CMPXCHG8B {
+		template <uint8_t l>
+		static constexpr Pattern _ = { {
+			mco<O::VAL>(R(TMP3,3),m(0,3)),
+			mco<O::CAT>(R(TMP4,3),R(RDX,2),R(RAX,2)),
+			mco<O::CMP>(R(FLAGS,3),R(TMP3,3),R(TMP4,3)),
+			mco<O::CAT>(R(TMP2,3),R(RCX,2),R(RBX,2)),
+			mco<O::SELECT_EQ>(m(0,3),R(FLAGS,3),R(TMP2,3),R(TMP3,3)),
+			mco<O::SELECT_EQ>(R(RAX,2),R(FLAGS,3),R(RAX,2),R(TMP3,2,0)),
+			mco<O::SELECT_EQ>(R(RDX,2),R(FLAGS,3),R(RDX,2),R(TMP3,2,4))
+		} };
+	};
+	struct CMPXCHG16B {
+		template <uint8_t l>
+		static constexpr Pattern _ = { {
+			mco<O::VAL>(R(TMP3,4),m(0,4)),
+			mco<O::CAT>(R(TMP4,4),R(RDX,3),R(RAX,3)),
+			mco<O::CMP>(R(FLAGS,3),R(TMP3,4),R(TMP4,4)),
+			mco<O::CAT>(R(TMP2,4),R(RCX,3),R(RBX,3)),
+			mco<O::SELECT_EQ>(m(0,4),R(FLAGS,3),R(TMP2,4),R(TMP3,4)),
+			mco<O::SELECT_EQ>(R(RAX,3),R(FLAGS,3),R(RAX,3),R(TMP3,3,0)),
+			mco<O::SELECT_EQ>(R(RDX,3),R(FLAGS,3),R(RDX,3),R(TMP3,3,8))
+		} };
+	};
+	struct XADD {
 		P(rr,  { rr_x1<O::VAL>(R(TMP1,l)),
-				 mco<O::CMP>(R(FLAGS,l),R(TMP1,l),R(RAX,l)),
-				 rr_1x2x<O::SELECT_EQ>(R(FLAGS,l),R(TMP1,l)),
-				 mco<O::SELECT_EQ>(R(RAX,l),R(FLAGS,l),R(RAX,l),R(TMP1,l)) });
-		PM(rm, { m_x1<O::VAL,lm>(R(TMP1,l)),
-				 mco<O::CMP>(R(FLAGS,l),R(TMP1,l),R(RAX,l)),
-				 rm_1x2x<O::SELECT_EQ,lm>(R(FLAGS,l),R(TMP1,l)),
-				 mco<O::SELECT_EQ>(R(RAX,l),R(FLAGS,l),R(RAX,l),R(TMP1,l)) });
+		         rr_112<O::ADD>(),
+		         rr_2x<O::VAL>(R(TMP1,l)) },
+		       { rr_x12<O::CMP,true>(R(FLAGS,l)) });
+		PM(rm, { rrm_x3<O::VAL,lm>(R(TMP1,l)),
+		         rrm_331<O::ADD,lm>(),
+		         rrm_1x<O::VAL>(R(TMP1,l)) },
+		       { rrm_x31<O::CMP,lm,true>(R(FLAGS,l)) });
 	};
 	struct CMOV {
 		template <uint8_t l>
@@ -147,6 +189,7 @@ namespace SBA::Lift::X86_64 {
 
 	using Mnemonics_DAT = SBA::Util::TypeList<
 		MOVSX, MOVZX, MOV, LEA, XCHG, CMPXCHG,
+		CMPXCHG8B, CMPXCHG16B, XADD,
 		PUSH, POP, PUSHF, POPF, LEAVE,
 		CBW, CWDE, CDQE, CWD, CDQ, CQO,
 		CMOV, SETCC

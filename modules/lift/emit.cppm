@@ -21,10 +21,11 @@ namespace SBA::Lift {
 
 	struct DynamicRegister {
 		uint8_t index;
+		uint8_t llength;
 		bool negated;
 
-		constexpr DynamicRegister(uint8_t idx) noexcept
-			: index(idx), negated(false) {}
+		constexpr DynamicRegister(uint8_t idx, uint8_t l = 0xFF) noexcept
+			: index(idx), llength(l), negated(false) {}
 
 		constexpr DynamicRegister operator-() const noexcept {
 			DynamicRegister res = *this;
@@ -174,7 +175,8 @@ namespace SBA::Lift {
 				case Type::DYN_REGISTER:
 					return parse_r<T>(
 						inst.getOperand(r_.index),
-						!!r_.negated
+						!!r_.negated,
+						r_.llength
 					);
 
 				case Type::DYN_IMMEDIATE:

@@ -26,15 +26,24 @@ namespace SBA::Lift {
 namespace SBA::Lift {
 
 	template <Target T>
-	inline Operand parse_r(uint32_t reg_id, uint8_t negated = 0) noexcept {
+	inline Operand parse_r(
+		uint32_t reg_id,
+		uint8_t negated = 0,
+		uint8_t llength = 0xFF) noexcept
+	{
 		auto op = llvm_registers<T>[reg_id];
+		op.r.llength = (llength == 0xFF) ? : llength;
 		op.r.negated = negated;
 		return op;
 	}
 
 	template <Target T>
-	inline Operand parse_r(const llvm::MCOperand& op, uint8_t negated = 0) noexcept {
-		return parse_r<T>(op.getReg(), negated);
+	inline Operand parse_r(
+		const llvm::MCOperand& op,
+		uint8_t negated = 0,
+		uint8_t llength = 0xFF) noexcept
+	{
+		return parse_r<T>(op.getReg(), negated, llength);
 	}
 
 	inline Operand parse_i(

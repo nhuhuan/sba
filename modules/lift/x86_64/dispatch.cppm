@@ -117,6 +117,8 @@ namespace SBA::Lift::X86_64 {
 		std::string_view& s) noexcept
 	{
 		match_suffix(s, "_REV");
+		match_suffix(s, "_Int");
+		match_suffix(s, "_alt");
 
 		if (match_suffix(s, "_NF_ND")) return Suffix::Modifier::NF_ND;
 		if (match_suffix(s, "_ND"))    return Suffix::Modifier::ND;

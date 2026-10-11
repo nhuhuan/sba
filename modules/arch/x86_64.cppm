@@ -104,6 +104,8 @@ export namespace SBA::Arch::X86_64 {
 		ANY,
 		TMP1,
 		TMP2,
+		TMP3,
+		TMP4,
 		#define DEF_REG_ENUM(name, length) name,
 		REGISTER_LIST(DEF_REG_ENUM)
 		#undef DEF_REG_ENUM
@@ -113,10 +115,14 @@ export namespace SBA::Arch::X86_64 {
 		FLAGS = RFLAGS
 	};
 
+	static_assert((uint8_t)Reg::GS < 16, "Segment registers must fit Affine::extra range");
+
 	constexpr uint16_t length(Reg r) noexcept {
 		switch (r) {
 			case Reg::TMP1:
 			case Reg::TMP2:
+			case Reg::TMP3:
+			case Reg::TMP4:
 				return 8;
 			#define DEF_REG_LEN(name, length) case Reg::name: return length;
 			REGISTER_LIST(DEF_REG_LEN)
