@@ -43,7 +43,9 @@ namespace SBA::Lift {
 				.index   = (uint32_t)it->base,
 				.offset  = it->offset,
 				.llength = it->llength,
-				.negated = 0
+				.negated = 0,
+				.xoffset = 0,
+				.xlength = 0
 			};
 
 		return NO_REG.r;

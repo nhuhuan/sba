@@ -20,6 +20,7 @@ namespace SBA::Lift::X86_64 {
 		template <uint8_t l, uint8_t lm = l> \
 		static constexpr Pattern Suffix = { __VA_ARGS__ }
 
+	#define r(...) DynamicRegister(__VA_ARGS__)
 
 	struct P_NOOP {
 		P(_,  {});
@@ -43,14 +44,26 @@ namespace SBA::Lift::X86_64 {
 	};
 
 	struct P_UD1 {
-		P(r,  { rr_12<O::VAL>(),
-		        mco<O::ABORT>() });
-		PM(m, { rm_12<O::VAL,lm>(),
-		        mco<O::ABORT>() });
+		P(r,  { rr_12<O::VAL>(), mco<O::ABORT>() });
+		PM(m, { rm_12<O::VAL,lm>(), mco<O::ABORT>() });
 	};
 
 	struct P_HYPERCALL {
 		P(_, { mco<O::HYPERCALL>() });
+	};
+
+	struct P_SYSTEM_METRIC {
+		P(_, { mco<O::CLB>(R(RAX,2)), mco<O::ZEXT>(R(RAX,3),R(RAX,2)),
+			   mco<O::CLB>(R(RDX,2)), mco<O::ZEXT>(R(RDX,3),R(RDX,2)) });
+	};
+
+	struct P_RAND {
+		P(r, { r_1<O::CLB>() }, { mco<O::CLB>(R(FLAGS,l)) });
+		template <>
+		constexpr Pattern r<2> = {
+			{ r_1<O::CLB>(), mco<O::ZEXT>(r(0,3),r(0,2)) },
+			{ mco<O::CLB>(R(FLAGS,2)) }
+		};
 	};
 
 	/* -----------------------------------------------------------------------*/
@@ -59,23 +72,23 @@ namespace SBA::Lift::X86_64 {
 	struct VMMCALL : P_HYPERCALL {};
 	struct SYSCALL {
 		P(_, { mco<O::VAL>(R(RCX),R(RIP)),
-		       mco<O::VAL>(R(R11),R(FLAGS)),
-		       mco<O::SYSCALL>() });
+			   mco<O::VAL>(R(R11),R(FLAGS)),
+			   mco<O::SYSCALL>() });
 	};
 	struct SYSRET {
 		P(_, { mco<O::VAL>(R(RIP),R(RCX)),
-		       mco<O::VAL>(R(FLAGS,l),R(R11,l)),
-		       mco<O::SYSRET>() });
+			   mco<O::VAL>(R(FLAGS,l),R(R11,l)),
+			   mco<O::SYSRET>() });
 	};
 	struct SYSENTER {
 		P(_, { mco<O::VAL>(R(RCX,2),R(RSP,2)),
-		       mco<O::VAL>(R(RDX,2),R(RIP,2)),
-		       mco<O::SYSCALL>() });
+			   mco<O::VAL>(R(RDX,2),R(RIP,2)),
+			   mco<O::SYSCALL>() });
 	};
 	struct SYSEXIT {
 		P(_, { mco<O::VAL>(R(RIP,l),R(RDX,l)),
-		       mco<O::VAL>(R(RSP,l),R(RCX,l)),
-		       mco<O::SYSRET>() });
+			   mco<O::VAL>(R(RSP,l),R(RCX,l)),
+			   mco<O::SYSRET>() });
 	};
 	struct IRET {
 		template <uint8_t l>
@@ -106,22 +119,22 @@ namespace SBA::Lift::X86_64 {
 	};
 	struct INT {
 		P(i, { mco<O::VAL>(R(RSP),A(RSP,-40)),
-		       mco<O::VAL>(M(RSP,0,3),R(RIP)),
-		       mco<O::VAL>(M(RSP,8,1),R(CS,1)),
-		       mco<O::VAL>(M(RSP,16,3),R(FLAGS)),
-		       mco<O::VAL>(M(RSP,24,3),A(RSP,40)),
-		       mco<O::VAL>(M(RSP,32,1),R(SS,1)),
-		       i_x1<O::VAL>(R(TMP1)),
-		       mco<O::VAL>(R(RIP),M(IDTR,TMP1,4,0,3)) });
+			   mco<O::VAL>(M(RSP,0,3),R(RIP)),
+			   mco<O::VAL>(M(RSP,8,1),R(CS,1)),
+			   mco<O::VAL>(M(RSP,16,3),R(FLAGS)),
+			   mco<O::VAL>(M(RSP,24,3),A(RSP,40)),
+			   mco<O::VAL>(M(RSP,32,1),R(SS,1)),
+			   i_x1<O::VAL>(R(TMP1)),
+			   mco<O::VAL>(R(RIP),M(IDTR,TMP1,4,0,3)) });
 	};
 	struct INT3 {
 		P(_, { mco<O::VAL>(R(RSP),A(RSP,-40)),
-		       mco<O::VAL>(M(RSP,0,3),R(RIP)),
-		       mco<O::VAL>(M(RSP,8,1),R(CS,1)),
-		       mco<O::VAL>(M(RSP,16,3),R(FLAGS)),
-		       mco<O::VAL>(M(RSP,24,3),A(RSP,40)),
-		       mco<O::VAL>(M(RSP,32,1),R(SS,1)),
-		       mco<O::TRAP>() });
+			   mco<O::VAL>(M(RSP,0,3),R(RIP)),
+			   mco<O::VAL>(M(RSP,8,1),R(CS,1)),
+			   mco<O::VAL>(M(RSP,16,3),R(FLAGS)),
+			   mco<O::VAL>(M(RSP,24,3),A(RSP,40)),
+			   mco<O::VAL>(M(RSP,32,1),R(SS,1)),
+			   mco<O::TRAP>() });
 	};
 	struct INT1  : INT3 {};
 	struct ICEBP : INT3 {};
@@ -147,17 +160,14 @@ namespace SBA::Lift::X86_64 {
 	struct MONITORX;
 		template <> struct MONITORX<SBA::Arch::Mode::USER>   : P_ABORT {};
 		template <> struct MONITORX<SBA::Arch::Mode::KERNEL> : P_NOOP {};
-
 	struct UMWAIT   : P_WAIT_E {};
 	struct TPAUSE   : P_WAIT_E {};
 	struct UMONITOR : P_NOOP {};
-
 	struct CLFLUSHOPT : P_DRAIN {};
 	struct CLWB       : P_DRAIN {};
 	struct INVD       : P_DRAIN {};
 	struct WBINVD     : P_DRAIN {};
 	struct WBNOINVD   : P_DRAIN {};
-
 	struct PAUSE {
 		P(_, { mco<O::YIELD>() });
 	};
@@ -188,6 +198,28 @@ namespace SBA::Lift::X86_64 {
 	struct NOOPL : P_NOOP {};
 	struct NOOPQ : P_NOOP {};
 	struct FNOP  : P_NOOP {};
+	struct XGETBV : P_SYSTEM_METRIC {};
+	struct RDTSC  : P_SYSTEM_METRIC {};
+	struct RDPMC  : P_SYSTEM_METRIC {};
+	struct RDTSCP {
+		P(_, { mco<O::CLB>(R(RAX,2)),mco<O::ZEXT>(R(RAX,3),R(RAX,2)),
+			   mco<O::CLB>(R(RDX,2)),mco<O::ZEXT>(R(RDX,3),R(RDX,2)),
+			   mco<O::CLB>(R(RCX,2)),mco<O::ZEXT>(R(RCX,3),R(RCX,2)) });
+	};
+	struct RDFSBASE {
+		P(_, { r_1x<O::VAL>(R(FS,l)) });
+	};
+	struct RDGSBASE {
+		P(_, { r_1x<O::VAL>(R(GS,l)) });
+	};
+	struct WRFSBASE {
+		P(_, { r_x1<O::VAL>(R(FS,l)) });
+	};
+	struct WRGSBASE {
+		P(_, { r_x1<O::VAL>(R(GS,l)) });
+	};
+	struct RDRAND : P_RAND {};
+	struct RDSEED : P_RAND {};
 
 	template <SBA::Arch::Mode M = SBA::Arch::Mode::USER>
 	using Mnemonics_SYS = SBA::Util::TypeList<
@@ -204,9 +236,13 @@ namespace SBA::Lift::X86_64 {
 		MWAIT<M>, MWAITX<M>, MONITOR<M>, MONITORX<M>,
 		TRAP,
 		HLT<M>,
-		PAUSE
+		PAUSE,
+		RDTSC, RDTSCP, RDPMC, XGETBV,
+		RDFSBASE, RDGSBASE, WRFSBASE, WRGSBASE,
+		RDRAND, RDSEED
 	>;
 
+	#undef r
 	#undef PM
 	#undef P
 

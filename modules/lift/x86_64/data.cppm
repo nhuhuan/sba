@@ -111,13 +111,13 @@ namespace SBA::Lift::X86_64 {
 	};
 	struct XADD {
 		P(rr,  { rr_x1<O::VAL>(R(TMP1,l)),
-		         rr_112<O::ADD>(),
-		         rr_2x<O::VAL>(R(TMP1,l)) },
-		       { rr_x12<O::CMP,true>(R(FLAGS,l)) });
+				 rr_112<O::ADD>(),
+				 rr_2x<O::VAL>(R(TMP1,l)) },
+			   { rr_x12<O::CMP,true>(R(FLAGS,l)) });
 		PM(rm, { rrm_x3<O::VAL,lm>(R(TMP1,l)),
-		         rrm_331<O::ADD,lm>(),
-		         rrm_1x<O::VAL>(R(TMP1,l)) },
-		       { rrm_x31<O::CMP,lm,true>(R(FLAGS,l)) });
+				 rrm_331<O::ADD,lm>(),
+				 rrm_1x<O::VAL>(R(TMP1,l)) },
+			   { rrm_x31<O::CMP,lm,true>(R(FLAGS,l)) });
 	};
 	struct CMOV {
 		template <uint8_t l>
@@ -161,30 +161,30 @@ namespace SBA::Lift::X86_64 {
 	};
 	struct PUSH {
 		P(r,   { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
-		         r_x1<O::VAL>(M(RSP,l)) });
+				 r_x1<O::VAL>(M(RSP,l)) });
 		P(i,   { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
-		         i_x1<O::VAL>(M(RSP,l)) });
+				 i_x1<O::VAL>(M(RSP,l)) });
 		PM(m,  { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
-		         m_x1<O::VAL,lm>(M(RSP,l)) });
+				 m_x1<O::VAL,lm>(M(RSP,l)) });
 	};
 	struct POP {
 		P(r,   { r_1x<O::VAL>(M(RSP,l)),
-		         mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
+				 mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
 		PM(m,  { m_1x<O::VAL,lm>(M(RSP,l)),
-		         mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
+				 mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
 	};
 	struct PUSHF {
 		P(_,   { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
-		         mco<O::VAL>(M(RSP,l),R(FLAGS,l)) });
+				 mco<O::VAL>(M(RSP,l),R(FLAGS,l)) });
 	};
 	struct POPF {
 		P(_,   { mco<O::VAL>(R(FLAGS,l),M(RSP,l)),
-		         mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
+				 mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
 	};
 	struct LEAVE {
 		P(_,   { mco<O::VAL>(R(RSP),R(RBP)),
-		         mco<O::VAL>(R(RBP,l),M(RSP,l)),
-		         mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
+				 mco<O::VAL>(R(RBP,l),M(RSP,l)),
+				 mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
 	};
 
 	using Mnemonics_DAT = SBA::Util::TypeList<

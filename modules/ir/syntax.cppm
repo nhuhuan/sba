@@ -14,12 +14,21 @@ export namespace SBA::IR {
 	struct Register {
 		uint32_t type    : 2;
 		uint32_t index   : 8;
-		uint32_t offset  : 8;
-		uint32_t llength : 4;
+		uint32_t offset  : 8; /* bytes */
+		uint32_t llength : 4; /* log2(bytes) */
 		uint32_t negated : 1;
-		uint32_t         : 9;
+		uint32_t xoffset : 3; /* extra bits */
+		uint32_t xlength : 6; /* bits */
 
 		constexpr bool operator==(const Register&) const noexcept = default;
+
+		constexpr uint32_t bit_offset() const noexcept {
+			return (offset << 3) | xoffset;
+		}
+
+		constexpr uint32_t bit_length() const noexcept {
+			return xlength != 0 ? xlength : (8u << llength);
+		}
 	};
 
 	struct Affine {
@@ -28,8 +37,8 @@ export namespace SBA::IR {
 		uint64_t index        : 8;
 		uint64_t shift        : 3;
 		uint64_t extra        : 4;
-		uint64_t llength      : 4;
-		uint64_t llength_addr : 3;
+		uint64_t llength      : 4; /* log2(bytes) */
+		uint64_t llength_addr : 3; /* log2(bytes) */
 		uint64_t dereferenced : 1;
 		uint64_t negated      : 1;
 

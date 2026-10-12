@@ -71,6 +71,7 @@ export namespace SBA::IR {
 		OP(S_NE,       4, "s_ne",       "count_while(a != b, l)")             \
 		OP(CADD,       4, "cadd",       "(a + b) + c")                        \
 		OP(CSUB,       4, "csub",       "(a - b) - c")                        \
+		OP(CCMP,       4, "ccmp",       "(a <=> b) with c")                   \
 		OP(SELECT_EQ,  4, "select_eq",  "a1  ==  a2    ? b : c")              \
 		OP(SELECT_NE,  4, "select_ne",  "a1  !=  a2    ? b : c")              \
 		OP(SELECT_LT,  4, "select_lt",  "a1  <   a2    ? b : c")              \
@@ -179,8 +180,9 @@ export namespace SBA::IR {
 			auto&& b = std::get<2>(tuple);
 			auto&& c = std::get<3>(tuple);
 			switch (op) {
-				case Operator::CADD:		return T::addc(a, b, c);
-				case Operator::CSUB:		return T::subc(a, b, c);
+				case Operator::CADD:		return T::cadd(a, b, c);
+				case Operator::CSUB:		return T::csub(a, b, c);
+				case Operator::CCMP:		return T::ccmp(a, b, c);
 				case Operator::SELECT_EQ
 				 ... Operator::SELECT_NP:	return T::select(op, a, b, c);
 				default:					std::unreachable();
