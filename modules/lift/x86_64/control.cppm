@@ -31,7 +31,7 @@ namespace SBA::Lift::X86_64 {
 	struct P_LOOP_CC {
 		P(_, { mco<O::VAL>(R(RCX),A(RCX,-1)),
 		       i_xx1<O::ADD>(R(TMP1),R(RIP)),
-		       mco<cc>(R(TMP1),R(FLAGS,0),R(TMP1),R(RIP)),
+		       mco<cc>(R(TMP1),R(FLAGS,64),R(TMP1),R(RIP)),
 		       mco<O::CMP>(R(TMP2),R(RCX),0ULL),
 		       mco<O::SELECT_NE>(R(RIP),R(TMP2),R(TMP1),R(RIP)) });
 	};
@@ -50,34 +50,34 @@ namespace SBA::Lift::X86_64 {
 			uint8_t cc = inst.getOperand(1).getImm();
 			MCO ops[] = {
 				i_xx1<O::ADD>(R(TMP1),R(RIP)),
-				{ CC[cc],R(RIP),R(FLAGS,0),R(TMP1),R(RIP) }
+				{ CC[cc],R(RIP),R(FLAGS,64),R(TMP1),R(RIP) }
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
 	};
 	struct CALL {
-		P(_,  { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
+		P(_,  { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
 		        mco<O::VAL>(M(RSP,l),R(RIP)),
 		        i_xx1<O::ADD>(R(RIP),R(RIP)) });
-		P(r,  { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
+		P(r,  { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
 		        mco<O::VAL>(M(RSP,l),R(RIP)),
 		        r_x1<O::VAL>(R(RIP)) });
-		PM(m, { mco<O::VAL>(R(RSP),A(RSP,-bytes<int64_t>(l))),
+		PM(m, { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
 		        mco<O::VAL>(M(RSP,l),R(RIP)),
 		        m_x1<O::VAL,lm>(R(RIP)) });
 	};
 	struct RET {
 		P(_, { mco<O::VAL>(R(RIP),M(RSP,l)),
-		       mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))) });
+		       mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l))) });
 	};
 	struct RETI {
 		P(_, { mco<O::VAL>(R(RIP),M(RSP,l)),
-		       mco<O::VAL>(R(RSP),A(RSP,bytes<int64_t>(l))),
+		       mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l))),
 		       i_xx1<O::ADD>(R(RSP),R(RSP)) });
 	};
-	struct JCXZ   : P_JCXZ<1> {};
-	struct JECXZ  : P_JCXZ<2> {};
-	struct JRCXZ  : P_JCXZ<3> {};
+	struct JCXZ   : P_JCXZ<16> {};
+	struct JECXZ  : P_JCXZ<32> {};
+	struct JRCXZ  : P_JCXZ<64> {};
 	struct LOOPE  : P_LOOP_CC<O::SELECT_EQ> {};
 	struct LOOPNE : P_LOOP_CC<O::SELECT_NE> {};
 	struct LOOP {

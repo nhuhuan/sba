@@ -19,10 +19,10 @@ export namespace SBA::IR {
 	class View;
 
 	struct Context {
-		SBA::Util::PVector<uint8_t,  (1ULL << REFERENCE_INST)> inst;
-		SBA::Util::PVector<uint32_t, (1ULL << REFERENCE_IMM)>  i32;
-		SBA::Util::PVector<uint64_t, (1ULL << REFERENCE_IMM)>  i64;
-		SBA::Util::PVector<Affine,   (1ULL << REFERENCE_AFF)>  aff;
+		SBA::Util::PVector<uint8_t,  (1ULL << INDEX_INST)> inst;
+		SBA::Util::PVector<uint32_t, (1ULL << INDEX_IMM)>  i32;
+		SBA::Util::PVector<uint64_t, (1ULL << INDEX_IMM)>  i64;
+		SBA::Util::PVector<Affine,   (1ULL << INDEX_AFF)>  aff;
 
 		View operator[](Instruction i) const noexcept;
 
@@ -34,17 +34,17 @@ export namespace SBA::IR {
 
 		Context() {
 			aff.push_back(
-				Affine {
-					.displacement = 0,
-					.base         = (uint8_t)r(ANY_REG).index,
-					.index        = (uint8_t)r(NO_REG).index,
-					.shift        = 0,
-					.extra        = (uint8_t)r(NO_REG).index,
-					.llength      = 0,
-					.llength_addr = 3,
-					.dereferenced = 1,
-					.negated      = 0
-				}
+				Affine(
+					1,
+					(uint8_t)r(ANY_REG).index,
+					0,
+					(uint8_t)r(NO_REG).index,
+					0,
+					(uint8_t)r(NO_REG).index,
+					0,
+					64,
+					0
+				)
 			);
 		}
 

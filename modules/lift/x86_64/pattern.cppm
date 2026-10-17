@@ -1,4 +1,5 @@
 module;
+#include <bit>
 #include <cstdint>
 
 export module sba.lift:x86_64_pattern;
@@ -10,8 +11,8 @@ import :emit;
 
 namespace SBA::Lift::X86_64 {
 
-	using SBA::Util::bytes;
-	using SBA::Util::bits;
+	using SBA::Util::bits_to_bytes;
+	using SBA::Util::bits_to_lbytes;
 
 	using Reg = SBA::Arch::X86_64::Reg;
 	using enum Reg;
@@ -24,38 +25,16 @@ namespace SBA::Lift::X86_64 {
 	using a = DynamicAffine;
 	using m = DynamicMemory;
 
-	inline constexpr Operand R(
-		Reg reg,
-		uint8_t llength = 3,
-		uint8_t offset = 0,
-		uint8_t xlength = 0,
-		uint8_t xoffset = 0) noexcept
-	{
-		return {
-			.r = {
-				(uint32_t)SBA::IR::Operand::Type::REGISTER,
-				(uint32_t)reg,
-				offset,
-				llength,
-				0,
-				xoffset,
-				xlength
-			}
-		};
+	inline constexpr Operand R(Reg reg, uint32_t length = 64) noexcept {
+		return { .r = Register((uint32_t)reg, 0, length) };
 	}
 
-	inline constexpr Operand R2(
+	inline constexpr Operand R(
 		Reg reg,
-		uint8_t bit_length,
-		uint32_t bit_offset) noexcept
+		uint32_t offset,
+		uint32_t length) noexcept
 	{
-		return R(
-			reg,
-			0,
-			(uint8_t)(bit_offset / 8),
-			bit_length,
-			(uint8_t)(bit_offset % 8)
-		);
+		return { .r = Register((uint32_t)reg, offset, length) };
 	}
 
 	inline constexpr Affine A(
@@ -63,27 +42,27 @@ namespace SBA::Lift::X86_64 {
 		Reg index,
 		uint8_t shift = 0,
 		int64_t displacement = 0,
-		uint8_t llength_addr = 3) noexcept
+		uint32_t length_a = 64) noexcept
 	{
-		return Affine {
-			.displacement = (int32_t)displacement,
-			.base         = (uint8_t)base,
-			.index        = (uint8_t)index,
-			.shift        = shift,
-			.extra        = 0,
-			.llength      = 0,
-			.llength_addr = llength_addr,
-			.dereferenced = 0,
-			.negated      = 0
-		};
+		return Affine(
+			0,
+			(uint8_t)base,
+			(int32_t)displacement,
+			(uint8_t)index,
+			shift,
+			0,
+			0,
+			length_a,
+			0
+		);
 	}
 
 	inline constexpr Affine A(
 		Reg base,
 		int64_t displacement,
-		uint8_t llength_addr = 3) noexcept
+		uint32_t length_a = 64) noexcept
 	{
-		return A(base, NONE, 0, displacement, llength_addr);
+		return A(base, NONE, 0, displacement, length_a);
 	}
 
 	inline constexpr Affine M(
@@ -91,28 +70,28 @@ namespace SBA::Lift::X86_64 {
 		Reg index,
 		uint8_t shift,
 		int64_t displacement,
-		uint8_t llength,
-		uint8_t llength_addr = 3) noexcept
+		uint32_t length_m,
+		uint32_t length_a = 64) noexcept
 	{
-		Affine m = A(base, index, shift, displacement, llength_addr);
+		Affine m = A(base, index, shift, displacement, length_a);
 		m.dereferenced = 1;
-		m.llength = llength;
+		m.llength_m = bits_to_lbytes(length_m);
 		return m;
 	}
 
 	inline constexpr Affine M(
 		Reg base,
 		int64_t displacement,
-		uint8_t llength) noexcept
+		uint32_t length_m) noexcept
 	{
-		return M(base, NONE, 0, displacement, llength, 3);
+		return M(base, NONE, 0, displacement, length_m, 64);
 	}
 
 	inline constexpr Affine M(
 		Reg base,
-		uint8_t llength) noexcept
+		uint32_t length_m) noexcept
 	{
-		return M(base, NONE, 0, 0, llength, 3);
+		return M(base, NONE, 0, 0, length_m, 64);
 	}
 
 	inline constexpr bool HAS_REP(MCInstruction inst) noexcept {

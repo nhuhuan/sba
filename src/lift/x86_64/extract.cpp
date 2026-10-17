@@ -37,16 +37,13 @@ namespace SBA::Lift {
 			}
 		);
 
-		if (it != registers.end())
-			return Register {
-				.type    = (uint32_t)Operand::Type::REGISTER,
-				.index   = (uint32_t)it->base,
-				.offset  = it->offset,
-				.llength = it->llength,
-				.negated = 0,
-				.xoffset = 0,
-				.xlength = 0
-			};
+		if (it != registers.end()) {
+			return Register(
+				(uint32_t)it->base,
+				it->offset,
+				it->length
+			);
+		}
 
 		return NO_REG.r;
 	}
@@ -60,17 +57,17 @@ namespace SBA::Lift {
 		auto i = parse_r<Target::X86_64>(ops[2]).r;
 		auto s = parse_r<Target::X86_64>(ops[4]).r;
 
-		return Affine {
-			.displacement = (int32_t)ops[3].getImm(),
-			.base         = (uint8_t)b.index,
-			.index        = (uint8_t)i.index,
-			.shift        = (uint8_t)std::countr_zero((unsigned)ops[1].getImm()),
-			.extra        = (uint8_t)s.index,
-			.llength      = 0,
-			.llength_addr = (uint8_t)std::max(b.llength, i.llength),
-			.dereferenced = 0,
-			.negated      = 0
-		};
+		return Affine(
+			0,
+			(uint8_t)b.index,
+			(int32_t)ops[3].getImm(),
+			(uint8_t)i.index,
+			(uint8_t)std::countr_zero((unsigned)ops[1].getImm()),
+			(uint8_t)s.index,
+			0,
+			std::max(b.length, i.length),
+			0
+		);
 	}
 
 }

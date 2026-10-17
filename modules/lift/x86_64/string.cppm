@@ -28,8 +28,8 @@ namespace SBA::Lift::X86_64 {
 			}
 			static constexpr MCO ops[] = {
 				mco<O::VAL>(M(RDI,lm),M(RSI,lm)),
-				mco<O::VAL>(R(RDI),A(RDI,bytes<int64_t>(lm))),
-				mco<O::VAL>(R(RSI),A(RSI,bytes<int64_t>(lm)))
+				mco<O::VAL>(R(RDI),A(RDI,bits_to_bytes(lm))),
+				mco<O::VAL>(R(RSI),A(RSI,bits_to_bytes(lm)))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -45,8 +45,8 @@ namespace SBA::Lift::X86_64 {
 				mco<O::VAL>(R(RSI),A(RSI,TMP1,lm)),
 				mco<O::VAL>(R(RDI),A(RDI,TMP1,lm)),
 				mco<O::SUB>(R(RCX),R(RCX),R(TMP1)),
-				mco<O::CMP>(R(FLAGS,lm),M(RSI,-bytes<int64_t>(lm),lm),
-				                        M(RDI,-bytes<int64_t>(lm),lm))
+				mco<O::CMP>(R(FLAGS,lm),M(RSI,-bits_to_bytes(lm),lm),
+				                        M(RDI,-bits_to_bytes(lm),lm))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -57,10 +57,10 @@ namespace SBA::Lift::X86_64 {
 			if (HAS_REPNE(inst)) return rep<O::S_NE>(ctx, cache, inst);
 			if (HAS_REPE(inst))  return rep<O::S_EQ>(ctx, cache, inst);
 			static constexpr MCO ops[] = {
-				mco<O::VAL>(R(RSI),A(RSI,bytes<int64_t>(lm))),
-				mco<O::VAL>(R(RDI),A(RDI,bytes<int64_t>(lm))),
-				mco<O::CMP>(R(FLAGS,lm),M(RSI,-bytes<int64_t>(lm),lm),
-				                        M(RDI,-bytes<int64_t>(lm),lm))
+				mco<O::VAL>(R(RSI),A(RSI,bits_to_bytes(lm))),
+				mco<O::VAL>(R(RDI),A(RDI,bits_to_bytes(lm))),
+				mco<O::CMP>(R(FLAGS,lm),M(RSI,-bits_to_bytes(lm),lm),
+				                        M(RDI,-bits_to_bytes(lm),lm))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -81,7 +81,7 @@ namespace SBA::Lift::X86_64 {
 			}
 			static constexpr MCO ops[] = {
 				mco<O::VAL>(M(RDI,lm),R(RAX,lm)),
-				mco<O::VAL>(R(RDI),A(RDI,bytes<int64_t>(lm)))
+				mco<O::VAL>(R(RDI),A(RDI,bits_to_bytes(lm)))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -94,7 +94,7 @@ namespace SBA::Lift::X86_64 {
 		{
 			if (HAS_REP(inst)) {
 				static constexpr MCO ops[] = {
-					mco<O::VAL>(R(RAX,lm),M(RSI,RCX,lm,-bytes<int64_t>(lm),lm)),
+					mco<O::VAL>(R(RAX,lm),M(RSI,RCX,lm,-bits_to_bytes(lm),lm)),
 					mco<O::VAL>(R(RSI),A(RSI,RCX,lm)),
 					mco<O::VAL>(R(RCX),0ULL)
 				};
@@ -102,7 +102,7 @@ namespace SBA::Lift::X86_64 {
 			}
 			static constexpr MCO ops[] = {
 				mco<O::VAL>(R(RAX,lm),M(RSI,lm)),
-				mco<O::VAL>(R(RSI),A(RSI,bytes<int64_t>(lm)))
+				mco<O::VAL>(R(RSI),A(RSI,bits_to_bytes(lm)))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -118,7 +118,7 @@ namespace SBA::Lift::X86_64 {
 				mco<O::VAL>(R(RDI),A(RDI,TMP1,lm)),
 				mco<O::SUB>(R(RCX),R(RCX),R(TMP1)),
 				mco<O::CMP>(R(FLAGS,lm),R(RAX,lm),
-				                        M(RDI,-bytes<int64_t>(lm),lm))
+				                        M(RDI,-bits_to_bytes(lm),lm))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -129,8 +129,8 @@ namespace SBA::Lift::X86_64 {
 			if (HAS_REPNE(inst)) return rep<O::S_NE>(ctx, cache, inst);
 			if (HAS_REPE(inst))  return rep<O::S_EQ>(ctx, cache, inst);
 			static constexpr MCO ops[] = {
-				mco<O::VAL>(R(RDI),A(RDI,bytes<int64_t>(lm))),
-				mco<O::CMP>(R(FLAGS,lm),R(RAX,lm),M(RDI,-bytes<int64_t>(lm),lm))
+				mco<O::VAL>(R(RDI),A(RDI,bits_to_bytes(lm))),
+				mco<O::CMP>(R(FLAGS,lm),R(RAX,lm),M(RDI,-bits_to_bytes(lm),lm))
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
@@ -138,26 +138,26 @@ namespace SBA::Lift::X86_64 {
 
 	/* -----------------------------------------------------------------------*/
 
-	struct MOVSB : P_MOVS<0> {};
-	struct MOVSW : P_MOVS<1> {};
-	struct MOVSL : P_MOVS<2> {};
-	struct MOVSQ : P_MOVS<3> {};
-	struct CMPSB : P_CMPS<0> {};
-	struct CMPSW : P_CMPS<1> {};
-	struct CMPSL : P_CMPS<2> {};
-	struct CMPSQ : P_CMPS<3> {};
-	struct STOSB : P_STOS<0> {};
-	struct STOSW : P_STOS<1> {};
-	struct STOSL : P_STOS<2> {};
-	struct STOSQ : P_STOS<3> {};
-	struct LODSB : P_LODS<0> {};
-	struct LODSW : P_LODS<1> {};
-	struct LODSL : P_LODS<2> {};
-	struct LODSQ : P_LODS<3> {};
-	struct SCASB : P_SCAS<0> {};
-	struct SCASW : P_SCAS<1> {};
-	struct SCASL : P_SCAS<2> {};
-	struct SCASQ : P_SCAS<3> {};
+	struct MOVSB : P_MOVS<8> {};
+	struct MOVSW : P_MOVS<16> {};
+	struct MOVSL : P_MOVS<32> {};
+	struct MOVSQ : P_MOVS<64> {};
+	struct CMPSB : P_CMPS<8> {};
+	struct CMPSW : P_CMPS<16> {};
+	struct CMPSL : P_CMPS<32> {};
+	struct CMPSQ : P_CMPS<64> {};
+	struct STOSB : P_STOS<8> {};
+	struct STOSW : P_STOS<16> {};
+	struct STOSL : P_STOS<32> {};
+	struct STOSQ : P_STOS<64> {};
+	struct LODSB : P_LODS<8> {};
+	struct LODSW : P_LODS<16> {};
+	struct LODSL : P_LODS<32> {};
+	struct LODSQ : P_LODS<64> {};
+	struct SCASB : P_SCAS<8> {};
+	struct SCASW : P_SCAS<16> {};
+	struct SCASL : P_SCAS<32> {};
+	struct SCASQ : P_SCAS<64> {};
 
 	using Mnemonics_STR = SBA::Util::TypeList<
 		MOVSB, MOVSW, MOVSL, MOVSQ,

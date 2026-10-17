@@ -11,8 +11,7 @@ namespace {
 
 export namespace SBA::IR {
 
-	inline constexpr Operand NO_REG  = { .r = { (uint32_t)REGISTER, 0, 0, 0, 0 } };
-	inline constexpr Operand ANY_REG = { .r = { (uint32_t)REGISTER, 1, 0, 0, 0 } };
-	inline constexpr Operand ANY_MEM = { .a = { (uint32_t)AFFINE,   0 } };
-
+	inline constexpr Operand NO_REG  = { .r = Register(0) };
+	inline constexpr Operand ANY_REG = { .r = Register(1) };
+	inline constexpr Operand ANY_MEM = { .a = { (uint32_t)AFFINE, 0 } };
 }

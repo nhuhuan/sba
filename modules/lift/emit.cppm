@@ -21,11 +21,11 @@ namespace SBA::Lift {
 
 	struct DynamicRegister {
 		uint8_t index;
-		uint8_t llength;
+		uint32_t length;
 		bool negated;
 
-		constexpr DynamicRegister(uint8_t idx, uint8_t l = 0xFF) noexcept
-			: index(idx), llength(l), negated(false) {}
+		constexpr DynamicRegister(uint8_t idx, uint32_t length = 0) noexcept
+			: index(idx), length(length), negated(false) {}
 
 		constexpr DynamicRegister operator-() const noexcept {
 			DynamicRegister res = *this;
@@ -50,11 +50,11 @@ namespace SBA::Lift {
 
 	struct DynamicMemory {
 		uint8_t index;
-		uint8_t llength;
+		uint32_t length_m;
 		bool negated;
 
-		constexpr DynamicMemory(uint8_t idx, uint8_t l) noexcept
-			: index(idx), llength(l), negated(false) {}
+		constexpr DynamicMemory(uint8_t idx, uint32_t length_m) noexcept
+			: index(idx), length_m(length_m), negated(false) {}
 
 		constexpr DynamicMemory operator-() const noexcept {
 			DynamicMemory res = *this;
@@ -176,7 +176,7 @@ namespace SBA::Lift {
 					return parse_r<T>(
 						inst.getOperand(r_.index),
 						!!r_.negated,
-						r_.llength
+						r_.length
 					);
 
 				case Type::DYN_IMMEDIATE:
@@ -187,24 +187,21 @@ namespace SBA::Lift {
 						!!i_.negated
 					);
 
-				case Type::DYN_MEMORY:
-					return parse_a<T>(
-						ctx,
-						cache,
-						inst.getOperand(m_.index),
-						m_.llength,
-						1,
-						!!m_.negated
-					);
-
 				case Type::DYN_AFFINE:
 					return parse_a<T>(
 						ctx,
 						cache,
 						inst.getOperand(a_.index),
-						0,
-						0,
 						!!a_.negated
+					);
+
+				case Type::DYN_MEMORY:
+					return parse_m<T>(
+						ctx,
+						cache,
+						inst.getOperand(m_.index),
+						m_.length_m,
+						!!m_.negated
 					);
 
 				default:

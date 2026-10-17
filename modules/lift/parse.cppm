@@ -1,4 +1,6 @@
 module;
+#include <bit>
+#include <cassert>
 #include <cstdint>
 #include <string_view>
 #include <llvm/MC/MCInst.h>
@@ -7,6 +9,7 @@ export module sba.lift:parse;
 
 import sba.arch;
 import sba.ir;
+import sba.util;
 import :cache;
 import :target;
 
@@ -27,23 +30,14 @@ namespace SBA::Lift {
 
 	template <Target T>
 	inline Operand parse_r(
-		uint32_t reg_id,
-		uint8_t negated = 0,
-		uint8_t llength = 0xFF) noexcept
-	{
-		auto op = llvm_registers<T>[reg_id];
-		op.r.llength = (llength == 0xFF) ? : llength;
-		op.r.negated = negated;
-		return op;
-	}
-
-	template <Target T>
-	inline Operand parse_r(
 		const llvm::MCOperand& op,
 		uint8_t negated = 0,
-		uint8_t llength = 0xFF) noexcept
+		uint32_t length = 0) noexcept
 	{
-		return parse_r<T>(op.getReg(), negated, llength);
+		auto res = llvm_registers<T>[op.getReg()];
+		res.r.length = length ? length : res.r.length;
+		res.r.negated = negated;
+		return res;
 	}
 
 	inline Operand parse_i(
@@ -62,13 +56,26 @@ namespace SBA::Lift {
 		Context& ctx,
 		Cache& cache,
 		const llvm::MCOperand& op,
-		uint8_t llength,
-		uint8_t dereferenced,
 		uint8_t negated = 0) noexcept
 	{
 		auto aff = extract_a<T>(op);
-		aff.llength = llength;
-		aff.dereferenced = dereferenced;
+		aff.dereferenced = 0;
+		aff.negated = negated;
+		return ctx.encode(cache, aff);
+	}
+
+	template <Target T>
+	inline Operand parse_m(
+		Context& ctx,
+		Cache& cache,
+		const llvm::MCOperand& op,
+		uint32_t length_m,
+		uint8_t negated = 0) noexcept
+	{
+		assert(std::has_single_bit(length_m) && length_m >= 8);
+		auto aff = extract_a<T>(op);
+		aff.llength_m = SBA::Util::bits_to_lbytes(length_m);
+		aff.dereferenced = 1;
 		aff.negated = negated;
 		return ctx.encode(cache, aff);
 	}

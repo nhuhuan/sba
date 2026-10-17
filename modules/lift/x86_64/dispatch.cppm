@@ -224,100 +224,100 @@ namespace SBA::Lift::X86_64 {
 		}
 	}
 
-	#define DISPATCH(Mnemonic, Suffix, LengthD, NoFlags)                  \
-		if constexpr (requires { Mnemonic::template Suffix<0>; }) {       \
-			if constexpr (std::convertible_to<                            \
-				decltype(Mnemonic::template Suffix<0>), Rule>)            \
-			{                                                             \
-				static constexpr Rule rules[] = {                         \
-					Mnemonic::template Suffix<0>,                         \
-					Mnemonic::template Suffix<1>,                         \
-					Mnemonic::template Suffix<2>,                         \
-					Mnemonic::template Suffix<3>                          \
-				};                                                        \
-				rule = rules[LengthD];                                    \
-			}                                                             \
-			else {                                                        \
-				static constexpr Rule rules[2][4] = {                     \
-					{ emit<Mnemonic::template Suffix<0>, false>,          \
-					  emit<Mnemonic::template Suffix<1>, false>,          \
-					  emit<Mnemonic::template Suffix<2>, false>,          \
-					  emit<Mnemonic::template Suffix<3>, false> },        \
-					{ emit<Mnemonic::template Suffix<0>, true>,           \
-					  emit<Mnemonic::template Suffix<1>, true>,           \
-					  emit<Mnemonic::template Suffix<2>, true>,           \
-					  emit<Mnemonic::template Suffix<3>, true> }          \
-				};                                                        \
-				rule = rules[NoFlags][LengthD];                           \
-			}                                                             \
-			return true;                                                  \
-		}                                                                 \
+	#define DISPATCH(Mnemonic, Suffix, LengthD, NoFlags)                    \
+		if constexpr (requires { Mnemonic::template Suffix<8>; }) {         \
+			if constexpr (std::convertible_to<                              \
+				decltype(Mnemonic::template Suffix<8>), Rule>)              \
+			{                                                               \
+				static constexpr Rule rules[] = {                           \
+					Mnemonic::template Suffix<8>,                           \
+					Mnemonic::template Suffix<16>,                          \
+					Mnemonic::template Suffix<32>,                          \
+					Mnemonic::template Suffix<64>                           \
+				};                                                          \
+				rule = rules[LengthD];                                      \
+			}                                                               \
+			else {                                                          \
+				static constexpr Rule rules[2][4] = {                       \
+					{ emit<Mnemonic::template Suffix<8>,  false>,           \
+					  emit<Mnemonic::template Suffix<16>, false>,           \
+					  emit<Mnemonic::template Suffix<32>, false>,           \
+					  emit<Mnemonic::template Suffix<64>, false> },         \
+					{ emit<Mnemonic::template Suffix<8>,  true>,            \
+					  emit<Mnemonic::template Suffix<16>, true>,            \
+					  emit<Mnemonic::template Suffix<32>, true>,            \
+					  emit<Mnemonic::template Suffix<64>, true> }           \
+				};                                                          \
+				rule = rules[NoFlags][LengthD];                             \
+			}                                                               \
+			return true;                                                    \
+		}                                                                   \
 		break;
 
-	#define DISPATCH_M(Mnemonic, Suffix, LengthD, LengthM, NoFlags)       \
-		if constexpr (requires { Mnemonic::template Suffix<0, 0>; }) {    \
-			if constexpr (std::convertible_to<                            \
-				decltype(Mnemonic::template Suffix<0, 0>), Rule>)         \
-			{                                                             \
-				static constexpr Rule rules[4][4] = {                     \
-					{ Mnemonic::template Suffix<0, 0>,                    \
-					  Mnemonic::template Suffix<0, 1>,                    \
-					  Mnemonic::template Suffix<0, 2>,                    \
-					  Mnemonic::template Suffix<0, 3> },                  \
-					{ Mnemonic::template Suffix<1, 0>,                    \
-					  Mnemonic::template Suffix<1, 1>,                    \
-					  Mnemonic::template Suffix<1, 2>,                    \
-					  Mnemonic::template Suffix<1, 3> },                  \
-					{ Mnemonic::template Suffix<2, 0>,                    \
-					  Mnemonic::template Suffix<2, 1>,                    \
-					  Mnemonic::template Suffix<2, 2>,                    \
-					  Mnemonic::template Suffix<2, 3> },                  \
-					{ Mnemonic::template Suffix<3, 0>,                    \
-					  Mnemonic::template Suffix<3, 1>,                    \
-					  Mnemonic::template Suffix<3, 2>,                    \
-					  Mnemonic::template Suffix<3, 3> }                   \
-				};                                                        \
-				rule = rules[LengthD][LengthM];                           \
-			}                                                             \
-			else {                                                        \
-				static constexpr Rule rules[2][4][4] = {                  \
-					{ { emit<Mnemonic::template Suffix<0, 0>, false>,     \
-						emit<Mnemonic::template Suffix<0, 1>, false>,     \
-						emit<Mnemonic::template Suffix<0, 2>, false>,     \
-						emit<Mnemonic::template Suffix<0, 3>, false> },   \
-					  { emit<Mnemonic::template Suffix<1, 0>, false>,     \
-						emit<Mnemonic::template Suffix<1, 1>, false>,     \
-						emit<Mnemonic::template Suffix<1, 2>, false>,     \
-						emit<Mnemonic::template Suffix<1, 3>, false> },   \
-					  { emit<Mnemonic::template Suffix<2, 0>, false>,     \
-						emit<Mnemonic::template Suffix<2, 1>, false>,     \
-						emit<Mnemonic::template Suffix<2, 2>, false>,     \
-						emit<Mnemonic::template Suffix<2, 3>, false> },   \
-					  { emit<Mnemonic::template Suffix<3, 0>, false>,     \
-						emit<Mnemonic::template Suffix<3, 1>, false>,     \
-						emit<Mnemonic::template Suffix<3, 2>, false>,     \
-						emit<Mnemonic::template Suffix<3, 3>, false> } }, \
-					{ { emit<Mnemonic::template Suffix<0, 0>, true>,      \
-						emit<Mnemonic::template Suffix<0, 1>, true>,      \
-						emit<Mnemonic::template Suffix<0, 2>, true>,      \
-						emit<Mnemonic::template Suffix<0, 3>, true> },    \
-					  { emit<Mnemonic::template Suffix<1, 0>, true>,      \
-						emit<Mnemonic::template Suffix<1, 1>, true>,      \
-						emit<Mnemonic::template Suffix<1, 2>, true>,      \
-						emit<Mnemonic::template Suffix<1, 3>, true> },    \
-					  { emit<Mnemonic::template Suffix<2, 0>, true>,      \
-						emit<Mnemonic::template Suffix<2, 1>, true>,      \
-						emit<Mnemonic::template Suffix<2, 2>, true>,      \
-						emit<Mnemonic::template Suffix<2, 3>, true> },    \
-					  { emit<Mnemonic::template Suffix<3, 0>, true>,      \
-						emit<Mnemonic::template Suffix<3, 1>, true>,      \
-						emit<Mnemonic::template Suffix<3, 2>, true>,      \
-						emit<Mnemonic::template Suffix<3, 3>, true> } }   \
-				};                                                        \
-				rule = rules[NoFlags][LengthD][LengthM];                  \
-			}                                                             \
-			return true;                                                  \
-		}                                                                 \
+	#define DISPATCH_M(Mnemonic, Suffix, LengthD, LengthM, NoFlags)         \
+		if constexpr (requires { Mnemonic::template Suffix<8, 8>; }) {      \
+			if constexpr (std::convertible_to<                              \
+				decltype(Mnemonic::template Suffix<8, 8>), Rule>)           \
+			{                                                               \
+				static constexpr Rule rules[4][4] = {                       \
+					{ Mnemonic::template Suffix<8,  8>,                     \
+					  Mnemonic::template Suffix<8,  16>,                    \
+					  Mnemonic::template Suffix<8,  32>,                    \
+					  Mnemonic::template Suffix<8,  64> },                  \
+					{ Mnemonic::template Suffix<16, 8>,                     \
+					  Mnemonic::template Suffix<16, 16>,                    \
+					  Mnemonic::template Suffix<16, 32>,                    \
+					  Mnemonic::template Suffix<16, 64> },                  \
+					{ Mnemonic::template Suffix<32, 8>,                     \
+					  Mnemonic::template Suffix<32, 16>,                    \
+					  Mnemonic::template Suffix<32, 32>,                    \
+					  Mnemonic::template Suffix<32, 64> },                  \
+					{ Mnemonic::template Suffix<64, 8>,                     \
+					  Mnemonic::template Suffix<64, 16>,                    \
+					  Mnemonic::template Suffix<64, 32>,                    \
+					  Mnemonic::template Suffix<64, 64> }                   \
+				};                                                          \
+				rule = rules[LengthD][LengthM];                             \
+			}                                                               \
+			else {                                                          \
+				static constexpr Rule rules[2][4][4] = {                    \
+					{ { emit<Mnemonic::template Suffix<8,  8>,  false>,     \
+						emit<Mnemonic::template Suffix<8,  16>, false>,     \
+						emit<Mnemonic::template Suffix<8,  32>, false>,     \
+						emit<Mnemonic::template Suffix<8,  64>, false> },   \
+					  { emit<Mnemonic::template Suffix<16, 8>,  false>,     \
+						emit<Mnemonic::template Suffix<16, 16>, false>,     \
+						emit<Mnemonic::template Suffix<16, 32>, false>,     \
+						emit<Mnemonic::template Suffix<16, 64>, false> },   \
+					  { emit<Mnemonic::template Suffix<32, 8>,  false>,     \
+						emit<Mnemonic::template Suffix<32, 16>, false>,     \
+						emit<Mnemonic::template Suffix<32, 32>, false>,     \
+						emit<Mnemonic::template Suffix<32, 64>, false> },   \
+					  { emit<Mnemonic::template Suffix<64, 8>,  false>,     \
+						emit<Mnemonic::template Suffix<64, 16>, false>,     \
+						emit<Mnemonic::template Suffix<64, 32>, false>,     \
+						emit<Mnemonic::template Suffix<64, 64>, false> } }, \
+					{ { emit<Mnemonic::template Suffix<8,  8>,  true>,      \
+						emit<Mnemonic::template Suffix<8,  16>, true>,      \
+						emit<Mnemonic::template Suffix<8,  32>, true>,      \
+						emit<Mnemonic::template Suffix<8,  64>, true> },    \
+					  { emit<Mnemonic::template Suffix<16, 8>,  true>,      \
+						emit<Mnemonic::template Suffix<16, 16>, true>,      \
+						emit<Mnemonic::template Suffix<16, 32>, true>,      \
+						emit<Mnemonic::template Suffix<16, 64>, true> },    \
+					  { emit<Mnemonic::template Suffix<32, 8>,  true>,      \
+						emit<Mnemonic::template Suffix<32, 16>, true>,      \
+						emit<Mnemonic::template Suffix<32, 32>, true>,      \
+						emit<Mnemonic::template Suffix<32, 64>, true> },    \
+					  { emit<Mnemonic::template Suffix<64, 8>,  true>,      \
+						emit<Mnemonic::template Suffix<64, 16>, true>,      \
+						emit<Mnemonic::template Suffix<64, 32>, true>,      \
+						emit<Mnemonic::template Suffix<64, 64>, true> } }   \
+				};                                                          \
+				rule = rules[NoFlags][LengthD][LengthM];                    \
+			}                                                               \
+			return true;                                                    \
+		}                                                                   \
 		break;
 
 	template <typename Mnemonic>
@@ -334,30 +334,30 @@ namespace SBA::Lift::X86_64 {
 
 		uint8_t ld = s.llength.d.value_or(3);
 		uint8_t lm = s.llength.m.value_or(ld);
-		bool no_flags = (s.modifier == Suffix::Modifier::NF ||
-						 s.modifier == Suffix::Modifier::NF_ND);
+		bool nf = (s.modifier == Suffix::Modifier::NF ||
+				   s.modifier == Suffix::Modifier::NF_ND);
 
 		switch (s.schema) {
-			case Suffix::Schema::_:    DISPATCH(Mnemonic,   _,    ld,     no_flags);
-			case Suffix::Schema::rr:   DISPATCH(Mnemonic,   rr,   ld,     no_flags);
-			case Suffix::Schema::ri:   DISPATCH(Mnemonic,   ri,   ld,     no_flags);
-			case Suffix::Schema::r:    DISPATCH(Mnemonic,   r,    ld,     no_flags);
-			case Suffix::Schema::i:    DISPATCH(Mnemonic,   i,    ld,     no_flags);
-			case Suffix::Schema::ar:   DISPATCH(Mnemonic,   ar,   ld,     no_flags);
-			case Suffix::Schema::ao:   DISPATCH(Mnemonic,   ao,   ld,     no_flags);
-			case Suffix::Schema::oa:   DISPATCH(Mnemonic,   oa,   ld,     no_flags);
-			case Suffix::Schema::r1:   DISPATCH(Mnemonic,   r1,   ld,     no_flags);
-			case Suffix::Schema::rCL:  DISPATCH(Mnemonic,   rCL,  ld,     no_flags);
-			case Suffix::Schema::rm:   DISPATCH_M(Mnemonic, rm,   ld, lm, no_flags);
-			case Suffix::Schema::mr:   DISPATCH_M(Mnemonic, mr,   ld, lm, no_flags);
-			case Suffix::Schema::mi:   DISPATCH_M(Mnemonic, mi,   ld, lm, no_flags);
-			case Suffix::Schema::m:    DISPATCH_M(Mnemonic, m,    ld, lm, no_flags);
-			case Suffix::Schema::m1:   DISPATCH_M(Mnemonic, m1,   ld, lm, no_flags);
-			case Suffix::Schema::mCL:  DISPATCH_M(Mnemonic, mCL,  ld, lm, no_flags);
-			case Suffix::Schema::rmb:  DISPATCH_M(Mnemonic, rmb,  ld, lm, no_flags);
-			case Suffix::Schema::mb:   DISPATCH_M(Mnemonic, mb,   ld, lm, no_flags);
-			case Suffix::Schema::mbi:  DISPATCH_M(Mnemonic, mbi,  ld, lm, no_flags);
-			case Suffix::Schema::rmbi: DISPATCH_M(Mnemonic, rmbi, ld, lm, no_flags);
+			case Suffix::Schema::_:    DISPATCH(Mnemonic,   _,    ld,     nf);
+			case Suffix::Schema::rr:   DISPATCH(Mnemonic,   rr,   ld,     nf);
+			case Suffix::Schema::ri:   DISPATCH(Mnemonic,   ri,   ld,     nf);
+			case Suffix::Schema::r:    DISPATCH(Mnemonic,   r,    ld,     nf);
+			case Suffix::Schema::i:    DISPATCH(Mnemonic,   i,    ld,     nf);
+			case Suffix::Schema::ar:   DISPATCH(Mnemonic,   ar,   ld,     nf);
+			case Suffix::Schema::ao:   DISPATCH(Mnemonic,   ao,   ld,     nf);
+			case Suffix::Schema::oa:   DISPATCH(Mnemonic,   oa,   ld,     nf);
+			case Suffix::Schema::r1:   DISPATCH(Mnemonic,   r1,   ld,     nf);
+			case Suffix::Schema::rCL:  DISPATCH(Mnemonic,   rCL,  ld,     nf);
+			case Suffix::Schema::rm:   DISPATCH_M(Mnemonic, rm,   ld, lm, nf);
+			case Suffix::Schema::mr:   DISPATCH_M(Mnemonic, mr,   ld, lm, nf);
+			case Suffix::Schema::mi:   DISPATCH_M(Mnemonic, mi,   ld, lm, nf);
+			case Suffix::Schema::m:    DISPATCH_M(Mnemonic, m,    ld, lm, nf);
+			case Suffix::Schema::m1:   DISPATCH_M(Mnemonic, m1,   ld, lm, nf);
+			case Suffix::Schema::mCL:  DISPATCH_M(Mnemonic, mCL,  ld, lm, nf);
+			case Suffix::Schema::rmb:  DISPATCH_M(Mnemonic, rmb,  ld, lm, nf);
+			case Suffix::Schema::mb:   DISPATCH_M(Mnemonic, mb,   ld, lm, nf);
+			case Suffix::Schema::mbi:  DISPATCH_M(Mnemonic, mbi,  ld, lm, nf);
+			case Suffix::Schema::rmbi: DISPATCH_M(Mnemonic, rmbi, ld, lm, nf);
 			default: break;
 		}
 
