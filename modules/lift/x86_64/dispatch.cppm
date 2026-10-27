@@ -1,12 +1,10 @@
 module;
-#include <cassert>
-#include <cctype>
+#include <array>
+#include <concepts>
 #include <cstdint>
-#include <initializer_list>
 #include <optional>
 #include <span>
 #include <string_view>
-#include <utility>
 #include <llvm/MC/MCInstrInfo.h>
 
 export module sba.lift:x86_64_dispatch;
@@ -15,7 +13,6 @@ import sba.arch;
 import sba.ir;
 export import sba.util;
 import :target;
-import :decode;
 import :cache;
 import :emit;
 import :x86_64_pattern;
@@ -61,10 +58,10 @@ namespace SBA::Lift::X86_64 {
 		} mask;
 
 		struct {
-			std::optional<uint8_t> d;
-			std::optional<uint8_t> m;
-			std::optional<uint8_t> o;
-			std::optional<uint8_t> v;
+			std::optional<uint8_t> d; /* destination */
+			std::optional<uint8_t> m; /* memory */
+			std::optional<uint8_t> o; /* offset */
+			std::optional<uint8_t> v; /* vector */
 		} llength;
 	};
 
@@ -173,7 +170,11 @@ namespace SBA::Lift::X86_64 {
 
 		auto lv = s.starts_with('Z') ? match_llength(s) : std::nullopt;
 		auto ld = match_llength(s);
-		auto lo = s.starts_with('o') ? match_llength(s) : std::nullopt;
+		std::optional<uint8_t> lo = std::nullopt;
+		if (s.starts_with('o')) {
+			s.remove_prefix(1);
+			lo = match_llength(s);
+		}
 		auto schema = match_schema(s);
 		lo = (schema == Suffix::Schema::ao) ? match_llength(s) : lo;
 
@@ -191,11 +192,6 @@ namespace SBA::Lift::X86_64 {
 }
 
 namespace SBA::Lift::X86_64 {
-
-	struct Pattern {
-		std::initializer_list<MCOperation> logic;
-		std::initializer_list<MCOperation> flags = {};
-	};
 
 	using Rule = Instruction(*)(
 		Context& ctx,

@@ -1,14 +1,10 @@
 module;
 #include <cstdint>
-#include <span>
 
 export module sba.lift:x86_64_legacy;
 
-import sba.arch;
 import sba.ir;
-import :emit;
 import :x86_64_pattern;
-import :x86_64_dispatch;
 
 namespace SBA::Lift::X86_64 {
 
@@ -21,11 +17,11 @@ namespace SBA::Lift::X86_64 {
 		static constexpr Pattern Suffix = { __VA_ARGS__ }
 
 	struct P_LEGACY_ABORT {
-		P(_,   { mco<O::ABORT>() });
-		P(i,   { mco<O::ABORT>() });
-		P(rr,  { mco<O::ABORT>() });
-		PM(rm, { mco<O::ABORT>() });
-		PM(mr, { mco<O::ABORT>() });
+		P(_,   { mcop<O::ABORT>() });
+		P(i,   { mcop<O::ABORT>() });
+		P(rr,  { mcop<O::ABORT>() });
+		PM(rm, { mcop<O::ABORT>() });
+		PM(mr, { mcop<O::ABORT>() });
 	};
 
 	/* -----------------------------------------------------------------------*/

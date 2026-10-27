@@ -53,6 +53,8 @@ export namespace SBA::Binary {
 		UNALLOCATED
 	};
 
+	/* ------------------------------ Segment ------------------------------- */
+
 	struct Segment {
 		uint64_t	address;
 		uint64_t	size;
@@ -69,6 +71,8 @@ export namespace SBA::Binary {
 			read(uint64_t addr, uint8_t width, Endian endian) const;
 	};
 
+	/* ------------------------------- Symbol ------------------------------- */
+
 	struct Symbol {
 		uint64_t	address;
 		uint64_t	size;
@@ -79,16 +83,22 @@ export namespace SBA::Binary {
 		std::string	name;
 	};
 
+	/* ------------------------------- Export ------------------------------- */
+
 	struct Export : public Symbol {
 		uint32_t	ordinal = 0;
 		std::string	forward_library;
 		std::string	forward_symbol;
 	};
 
+	/* ------------------------------- Import ------------------------------- */
+
 	struct Import : public Symbol {
 		uint32_t	ordinal = 0;
 		std::string	library_name;
 	};
+
+	/* ----------------------------- Relocation ----------------------------- */
 
 	struct Relocation {
 		uint64_t	address;

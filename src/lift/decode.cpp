@@ -3,15 +3,12 @@ module;
 #include <string>
 #include <span>
 #include <mutex>
-#include <cassert>
 #include <llvm/MC/MCContext.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include <llvm/MC/MCDisassembler/MCDisassembler.h>
-#include <llvm/MC/MCInst.h>
 #include <llvm/MC/MCInstrInfo.h>
 #include <llvm/MC/MCRegisterInfo.h>
 #include <llvm/MC/MCSubtargetInfo.h>
-#include <llvm/MC/MCTargetOptions.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 
@@ -46,7 +43,6 @@ namespace SBA::Lift {
 
 			std::string error;
 			target<T> = llvm::TargetRegistry::lookupTarget(triple, error);
-			assert(target<T>);
 
 			info_reg<T>  = target<T>->createMCRegInfo(triple);
 			info_inst<T> = target<T>->createMCInstrInfo();
@@ -59,9 +55,7 @@ namespace SBA::Lift {
 			auto num_regs = info_reg<T>->getNumRegs();
 			llvm_registers<T>.assign(num_regs, NO_REG);
 			for (size_t i = 1; i < num_regs; ++i)
-				llvm_registers<T>[i] = Operand {
-					.r = extract_r<T>(info_reg<T>->getName(i))
-				};
+				llvm_registers<T>[i] = extract_r<T>(info_reg<T>->getName(i));
 		});
 	}
 

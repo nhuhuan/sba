@@ -1,6 +1,5 @@
 module;
 #include <cstdint>
-#include <span>
 
 export module sba.lift:x86_64_control;
 
@@ -8,7 +7,6 @@ import sba.arch;
 import sba.ir;
 import :emit;
 import :x86_64_pattern;
-import :x86_64_dispatch;
 
 namespace SBA::Lift::X86_64 {
 
@@ -22,24 +20,38 @@ namespace SBA::Lift::X86_64 {
 
 	template <uint8_t l_rcx>
 	struct P_JCXZ {
-		P(_, { i_xx1<O::ADD>(R(TMP1),R(RIP)),
-		       mco<O::CMP>(R(TMP2),R(RCX,l_rcx),0ULL),
-		       mco<O::SELECT_EQ>(R(RIP),R(TMP2),R(TMP1),R(RIP)) });
+		template <uint8_t l>
+		static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
+		{
+			int32_t rel = inst.getOperand(0).getImm();
+			MCOP ops[] = {
+				mcop<O::CMP>(R(TMP1), R(RCX)[0,l_rcx], 0ULL),
+				mcop<O::SELECT_EQ>(R(RIP), R(TMP1), A(RIP+rel), R(RIP))
+			};
+			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+		}
 	};
 
 	template <O cc>
 	struct P_LOOP_CC {
-		P(_, { mco<O::VAL>(R(RCX),A(RCX,-1)),
-		       i_xx1<O::ADD>(R(TMP1),R(RIP)),
-		       mco<cc>(R(TMP1),R(FLAGS,64),R(TMP1),R(RIP)),
-		       mco<O::CMP>(R(TMP2),R(RCX),0ULL),
-		       mco<O::SELECT_NE>(R(RIP),R(TMP2),R(TMP1),R(RIP)) });
+		template <uint8_t l>
+		static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
+		{
+			int32_t rel = inst.getOperand(0).getImm();
+			MCOP ops[] = {
+				mcop<O::VAL>(R(RCX), A(RCX-1)),
+				mcop<cc>(R(TMP1), R(FLAGS), A(RIP+rel), R(RIP)),
+				mcop<O::CMP>(R(TMP2), R(RCX), 0ULL),
+				mcop<O::SELECT_NE>(R(RIP), R(TMP2), R(TMP1), R(RIP))
+			};
+			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+		}
 	};
 
 	/* -----------------------------------------------------------------------*/
 
 	struct JMP {
-		P(_,  { i_xx1<O::ADD>(R(RIP),R(RIP)) });
+		P(_,  { i_xx1<O::ADD>(R(RIP), R(RIP)) });
 		P(r,  { r_x1<O::VAL>(R(RIP)) });
 		PM(m, { m_x1<O::VAL,lm>(R(RIP)) });
 	};
@@ -48,32 +60,39 @@ namespace SBA::Lift::X86_64 {
 		static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
 		{
 			uint8_t cc = inst.getOperand(1).getImm();
-			MCO ops[] = {
-				i_xx1<O::ADD>(R(TMP1),R(RIP)),
-				{ CC[cc],R(RIP),R(FLAGS,64),R(TMP1),R(RIP) }
+			int32_t rel = inst.getOperand(0).getImm();
+			MCOP ops[] = {
+				{ CC[cc], R(RIP), R(FLAGS), A(RIP+rel), R(RIP) }
 			};
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
 	};
 	struct CALL {
-		P(_,  { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
-		        mco<O::VAL>(M(RSP,l),R(RIP)),
-		        i_xx1<O::ADD>(R(RIP),R(RIP)) });
-		P(r,  { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
-		        mco<O::VAL>(M(RSP,l),R(RIP)),
-		        r_x1<O::VAL>(R(RIP)) });
-		PM(m, { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
-		        mco<O::VAL>(M(RSP,l),R(RIP)),
-		        m_x1<O::VAL,lm>(R(RIP)) });
+		P(_,  { mcop<O::VAL>(R(RSP), A(RSP-bits_to_bytes(l))),
+				mcop<O::VAL>(M(RSP)[l], R(RIP)),
+				i_xx1<O::ADD>(R(RIP), R(RIP)) });
+		P(r,  { mcop<O::VAL>(R(RSP), A(RSP-bits_to_bytes(l))),
+				mcop<O::VAL>(M(RSP)[l], R(RIP)),
+				r_x1<O::VAL>(R(RIP)) });
+		PM(m, { mcop<O::VAL>(R(RSP), A(RSP-bits_to_bytes(l))),
+				mcop<O::VAL>(M(RSP)[l], R(RIP)),
+				m_x1<O::VAL,lm>(R(RIP)) });
 	};
 	struct RET {
-		P(_, { mco<O::VAL>(R(RIP),M(RSP,l)),
-		       mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l))) });
+		P(_, { mcop<O::VAL>(R(RIP), M(RSP)[l]),
+			   mcop<O::VAL>(R(RSP), A(RSP+bits_to_bytes(l))) });
 	};
 	struct RETI {
-		P(_, { mco<O::VAL>(R(RIP),M(RSP,l)),
-		       mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l))),
-		       i_xx1<O::ADD>(R(RSP),R(RSP)) });
+		template <uint8_t l>
+		static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
+		{
+			int32_t imm = inst.getOperand(0).getImm();
+			MCOP ops[] = {
+				mcop<O::VAL>(R(RIP), M(RSP)[l]),
+				mcop<O::VAL>(R(RSP), A(RSP+(bits_to_bytes(l)+imm)))
+			};
+			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+		}
 	};
 	struct JCXZ   : P_JCXZ<16> {};
 	struct JECXZ  : P_JCXZ<32> {};
@@ -81,10 +100,17 @@ namespace SBA::Lift::X86_64 {
 	struct LOOPE  : P_LOOP_CC<O::SELECT_EQ> {};
 	struct LOOPNE : P_LOOP_CC<O::SELECT_NE> {};
 	struct LOOP {
-		P(_, { mco<O::VAL>(R(RCX),A(RCX,-1)),
-		       i_xx1<O::ADD>(R(TMP1),R(RIP)),
-		       mco<O::CMP>(R(TMP2),R(RCX),0ULL),
-		       mco<O::SELECT_NE>(R(RIP),R(TMP2),R(TMP1),R(RIP)) });
+		template <uint8_t l>
+		static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
+		{
+			int32_t rel = inst.getOperand(0).getImm();
+			MCOP ops[] = {
+				mcop<O::VAL>(R(RCX), A(RCX-1)),
+				mcop<O::CMP>(R(TMP1), R(RCX), 0ULL),
+				mcop<O::SELECT_NE>(R(RIP), R(TMP1), A(RIP+rel), R(RIP))
+			};
+			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+		}
 	};
 
 	using Mnemonics_CTL = SBA::Util::TypeList<

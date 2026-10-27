@@ -1,6 +1,8 @@
 module;
-#include <bit>
+#include <array>
 #include <cstdint>
+#include <initializer_list>
+#include <span>
 
 export module sba.lift:x86_64_pattern;
 
@@ -14,85 +16,30 @@ namespace SBA::Lift::X86_64 {
 	using SBA::Util::bits_to_bytes;
 	using SBA::Util::bits_to_lbytes;
 
-	using Reg = SBA::Arch::X86_64::Reg;
-	using enum Reg;
+	using enum SBA::Arch::X86_64::Reg;
 
 	using O = SBA::IR::Operator;
-	using MCO = SBA::Lift::MCOperation;
+	using MCOP = SBA::Lift::MCOperation;
 
-	using r = DynamicRegister;
-	using i = DynamicImmediate;
-	using a = DynamicAffine;
-	using m = DynamicMemory;
+	struct Pattern {
+		struct List {
+			std::array<MCOperation, SBA::IR::MAX_OPERATIONS> data{};
+			size_t count = 0;
 
-	inline constexpr Operand R(Reg reg, uint32_t length = 64) noexcept {
-		return { .r = Register((uint32_t)reg, 0, length) };
-	}
+			constexpr List() noexcept = default;
+			constexpr List(std::initializer_list<MCOperation> ops) noexcept {
+				for (const auto& op : ops)
+					if (op.opcode != Operator::_)
+						data[count++] = op;
+			}
+			constexpr operator std::span<const MCOperation>() const noexcept {
+				return { data.data(), count };
+			}
+		};
 
-	inline constexpr Operand R(
-		Reg reg,
-		uint32_t offset,
-		uint32_t length) noexcept
-	{
-		return { .r = Register((uint32_t)reg, offset, length) };
-	}
-
-	inline constexpr Affine A(
-		Reg base,
-		Reg index,
-		uint8_t shift = 0,
-		int64_t displacement = 0,
-		uint32_t length_a = 64) noexcept
-	{
-		return Affine(
-			0,
-			(uint8_t)base,
-			(int32_t)displacement,
-			(uint8_t)index,
-			shift,
-			0,
-			0,
-			length_a,
-			0
-		);
-	}
-
-	inline constexpr Affine A(
-		Reg base,
-		int64_t displacement,
-		uint32_t length_a = 64) noexcept
-	{
-		return A(base, NONE, 0, displacement, length_a);
-	}
-
-	inline constexpr Affine M(
-		Reg base,
-		Reg index,
-		uint8_t shift,
-		int64_t displacement,
-		uint32_t length_m,
-		uint32_t length_a = 64) noexcept
-	{
-		Affine m = A(base, index, shift, displacement, length_a);
-		m.dereferenced = 1;
-		m.llength_m = bits_to_lbytes(length_m);
-		return m;
-	}
-
-	inline constexpr Affine M(
-		Reg base,
-		int64_t displacement,
-		uint32_t length_m) noexcept
-	{
-		return M(base, NONE, 0, displacement, length_m, 64);
-	}
-
-	inline constexpr Affine M(
-		Reg base,
-		uint32_t length_m) noexcept
-	{
-		return M(base, NONE, 0, 0, length_m, 64);
-	}
+		List logic;
+		List flags = {};
+	};
 
 	inline constexpr bool HAS_REP(MCInstruction inst) noexcept {
 		return inst.getFlags() & 0x8;
@@ -128,423 +75,349 @@ namespace SBA::Lift::X86_64 {
 	/* 0. Fixed Operands */
 
 	template <O op, typename... Args>
-	constexpr MCO mco(Args&&... args) noexcept {
+	constexpr MCOP mcop(Args&&... args) noexcept {
 		return { op, static_cast<MCOperand>(args)... };
+	}
+
+	template <uint8_t l>
+	constexpr MCOP zero_high32(DRegister reg) noexcept {
+		if constexpr (l == 32)
+			return mcop<O::ZEXT>(reg[0, 64], reg[0, 32]);
+		else
+			return mcop<O::_>();
+	}
+
+	template <uint8_t l>
+	constexpr MCOP zero_high32(Register reg) noexcept {
+		if constexpr (l == 32)
+			return mcop<O::ZEXT>(reg, reg[0, 32]);
+		else
+			return mcop<O::_>();
 	}
 
 	/* 1. Data Copy */
 
 	template <O op>
-	constexpr MCO r_1() noexcept {
-		return { op, r(0) };
+	constexpr MCOP r_1() noexcept {
+		return { op, DR(0) };
 	}
 
 	template <O op>
-	constexpr MCO r_x1(MCOperand x) noexcept {
-		return { op, x, r(0) };
+	constexpr MCOP r_x1(MCOperand x) noexcept {
+		return { op, x, DR(0) };
 	}
 
 	template <O op>
-	constexpr MCO r_1x(MCOperand x) noexcept {
-		return { op, r(0), x };
+	constexpr MCOP r_1x(MCOperand x) noexcept {
+		return { op, DR(0), x };
 	}
 
 	template <O op>
-	constexpr MCO i_x1(MCOperand x) noexcept {
-		return { op, x, i(0) };
+	constexpr MCOP i_x1(MCOperand x) noexcept {
+		return { op, x, DI(0) };
 	}
 
 	template <O op>
-	constexpr MCO rr_x1(MCOperand x) noexcept {
-		return { op, x, r(0) };
-	}
-
-	template <O op>
-	constexpr MCO rr_2x(MCOperand x) noexcept {
-		return { op, r(1), x };
-	}
-
-	template <O op>
-	constexpr MCO rrm_x1(MCOperand x) noexcept {
-		return { op, x, r(0) };
+	constexpr MCOP rr_2x(MCOperand x) noexcept {
+		return { op, DR(1), x };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO mr_x1(MCOperand x) noexcept {
-		return { op, x, m(0, lm) };
+	constexpr MCOP m_x1(MCOperand x) noexcept {
+		return { op, x, DM(0)[lm] };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO m_x1(MCOperand x) noexcept {
-		return { op, x, m(0, lm) };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO m_1x(MCOperand x) noexcept {
-		return { op, m(0, lm), x };
+	constexpr MCOP m_1x(MCOperand x) noexcept {
+		return { op, DM(0)[lm], x };
 	}
 
 	template <O op>
-	constexpr MCO rr_12() noexcept {
-		return { op, r(0), r(1) };
+	constexpr MCOP rr_12() noexcept {
+		return { op, DR(0), DR(1) };
 	}
 
 	template <O op>
-	constexpr MCO ri_12() noexcept {
-		return { op, r(0), i(1) };
+	constexpr MCOP ri_12() noexcept {
+		return { op, DR(0), DI(1) };
 	}
 
 	template <O op>
-	constexpr MCO ra_12() noexcept {
-		return { op, r(0), a(1) };
+	constexpr MCOP ra_12() noexcept {
+		return { op, DR(0), DA(1) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rm_12() noexcept {
-		return { op, r(0), m(1, lm) };
+	constexpr MCOP rm_12() noexcept {
+		return { op, DR(0), DM(1)[lm] };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO mr_12() noexcept {
-		return { op, m(0, lm), r(5) };
+	constexpr MCOP mr_12() noexcept {
+		return { op, DM(0)[lm], DR(5) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO mi_12() noexcept {
-		return { op, m(0, lm), i(5) };
+	constexpr MCOP mi_12() noexcept {
+		return { op, DM(0)[lm], DI(5) };
 	}
 
 	/* 2. Unary ALU */
 
 	template <O op>
-	constexpr MCO rr_12x(MCOperand x) noexcept {
-		return { op, r(0), r(1), x };
+	constexpr MCOP rr_12x(MCOperand x) noexcept {
+		return { op, DR(0), DR(1), x };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO m_11() noexcept {
-		return { op, m(0, lm), m(0, lm) };
+	constexpr MCOP m_11() noexcept {
+		return { op, DM(0)[lm], DM(0)[lm] };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO m_11x(MCOperand x) noexcept {
-		return { op, m(0, lm), m(0, lm), x };
-	}
-
-	template <O op>
-	constexpr MCO rrr_13() noexcept {
-		return { op, r(0), r(2) };
+	constexpr MCOP m_11x(MCOperand x) noexcept {
+		return { op, DM(0)[lm], DM(0)[lm], x };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rrm_13() noexcept {
-		return { op, r(0), m(2, lm) };
-	}
-
-	template <O op>
-	constexpr MCO rrr_x3(MCOperand x) noexcept {
-		return { op, x, r(2) };
+	constexpr MCOP rrm_13() noexcept {
+		return { op, DR(0), DM(2)[lm] };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rrm_x3(MCOperand x) noexcept {
-		return { op, x, m(2, lm) };
+	constexpr MCOP rrm_x3(MCOperand x) noexcept {
+		return { op, x, DM(2)[lm] };
 	}
 
 	/* 3. Binary ALU */
 
 	template <O op>
-	constexpr MCO rr_112() noexcept {
-		return { op, r(0), r(0), r(1) };
+	constexpr MCOP rr_112() noexcept {
+		return { op, DR(0), DR(0), DR(1) };
 	}
 
 	template <O op>
-	constexpr MCO rrr_123() noexcept {
-		return { op, r(0), r(1), r(2) };
+	constexpr MCOP rrr_123() noexcept {
+		return { op, DR(0), DR(1), DR(2) };
 	}
 
 	template <O op>
-	constexpr MCO rri_123() noexcept {
-		return { op, r(0), r(1), i(2) };
+	constexpr MCOP rri_123() noexcept {
+		return { op, DR(0), DR(1), DI(2) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rrm_123() noexcept {
-		return { op, r(0), r(1), m(2, lm) };
+	constexpr MCOP rrm_123() noexcept {
+		return { op, DR(0), DR(1), DM(2)[lm] };
 	}
 
 	template <O op>
-	constexpr MCO r_xx1(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, x2, r(0) };
+	constexpr MCOP r_xx1(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, x2, DR(0) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO m_xx1(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, x2, m(0, lm) };
+	constexpr MCOP m_xx1(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, x2, DM(0)[lm] };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO mr_112() noexcept {
-		return { op, m(0, lm), m(0, lm), r(5) };
+	constexpr MCOP mr_112() noexcept {
+		return { op, DM(0)[lm], DM(0)[lm], DR(5) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO mi_112() noexcept {
-		return { op, m(0, lm), m(0, lm), i(5) };
+	constexpr MCOP mi_112() noexcept {
+		return { op, DM(0)[lm], DM(0)[lm], DI(5) };
 	}
 
 	template <O op>
-	constexpr MCO rrr_123x(MCOperand x) noexcept {
-		return { op, r(0), r(1), r(2), x };
+	constexpr MCOP rrr_123x(MCOperand x) noexcept {
+		return { op, DR(0), DR(1), DR(2), x };
 	}
 
 	template <O op>
-	constexpr MCO rri_123x(MCOperand x) noexcept {
-		return { op, r(0), r(1), i(2), x };
+	constexpr MCOP rri_123x(MCOperand x) noexcept {
+		return { op, DR(0), DR(1), DI(2), x };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rrm_123x(MCOperand x) noexcept {
-		return { op, r(0), r(1), m(2, lm), x };
+	constexpr MCOP rrm_123x(MCOperand x) noexcept {
+		return { op, DR(0), DR(1), DM(2)[lm], x };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO mr_112x(MCOperand x) noexcept {
-		return { op, m(0, lm), m(0, lm), r(5), x };
+	constexpr MCOP mr_112x(MCOperand x) noexcept {
+		return { op, DM(0)[lm], DM(0)[lm], DR(5), x };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO mi_112x(MCOperand x) noexcept {
-		return { op, m(0, lm), m(0, lm), i(5), x };
+	constexpr MCOP mi_112x(MCOperand x) noexcept {
+		return { op, DM(0)[lm], DM(0)[lm], DI(5), x };
 	}
 
 	template <O op>
-	constexpr MCO rrr_x2(MCOperand x) noexcept {
-		return { op, x, r(1) };
+	constexpr MCOP rr_x2(MCOperand x) noexcept {
+		return { op, x, DR(1) };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCOP rm_x2(MCOperand x) noexcept {
+		return { op, x, DM(1)[lm] };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCOP rm_12x(MCOperand x) noexcept {
+		return { op, DR(0), DM(1)[lm], x };
 	}
 
 	template <O op>
-	constexpr MCO rrm_x2(MCOperand x) noexcept {
-		return { op, x, r(1) };
+	constexpr MCOP rrr_1x3(MCOperand x) noexcept {
+		return { op, DR(0), x, DR(2) };
 	}
 
 	template <O op>
-	constexpr MCO rr_x2(MCOperand x) noexcept {
-		return { op, x, r(1) };
+	constexpr MCOP rrr_2x3(MCOperand x) noexcept {
+		return { op, DR(1), x, DR(2) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rm_x2(MCOperand x) noexcept {
-		return { op, x, m(1, lm) };
+	constexpr MCOP rrm_1x3(MCOperand x) noexcept {
+		return { op, DR(0), x, DM(2)[lm] };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rm_12x(MCOperand x) noexcept {
-		return { op, r(0), m(1, lm), x };
+	constexpr MCOP rrm_2x3(MCOperand x) noexcept {
+		return { op, DR(1), x, DM(2)[lm] };
 	}
 
 	template <O op>
-	constexpr MCO rrr_1x3(MCOperand x) noexcept {
-		return { op, r(0), x, r(2) };
+	constexpr MCOP rrr_xx3(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, x2, DR(2) };
+	}
+
+	template <O op, uint8_t lm>
+	constexpr MCOP rmr_123() noexcept {
+		return { op, DR(0), DM(1)[lm], DR(6) };
 	}
 
 	template <O op>
-	constexpr MCO rrr_2x3(MCOperand x) noexcept {
-		return { op, r(1), x, r(2) };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO rrm_1x3(MCOperand x) noexcept {
-		return { op, r(0), x, m(2, lm) };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO rrm_2x3(MCOperand x) noexcept {
-		return { op, r(1), x, m(2, lm) };
+	constexpr MCOP rmr_xx3(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, x2, DR(6) };
 	}
 
 	template <O op>
-	constexpr MCO rrr_xx3(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, x2, r(2) };
-	}
-
-	template <O op>
-	constexpr MCO rrr_x3x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(2), x2 };
-	}
-
-	template <O op>
-	constexpr MCO rrr_x2x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(1), x2 };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO rmr_123() noexcept {
-		return { op, r(0), m(1, lm), r(6) };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO rmr_xx3(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, x2, r(6) };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO rmr_x3x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(6), x2 };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO rmr_x2x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, m(1, lm), x2 };
-	}
-
-	template <O op>
-	constexpr MCO rrr_1xx(MCOperand x1, MCOperand x2) noexcept {
-		return { op, r(0), x1, x2 };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO rrm_1xx(MCOperand x1, MCOperand x2) noexcept {
-		return { op, r(0), x1, x2 };
+	constexpr MCOP r_1xx(MCOperand x1, MCOperand x2) noexcept {
+		return { op, DR(0), x1, x2 };
 	}
 
 	/* 4. Comparison */
 
 	template <O op, bool neg = false>
-	constexpr MCO rrr_x23(MCOperand x) noexcept {
-		return { op, x, r(1), neg ? -r(2) : r(2) };
+	constexpr MCOP rrr_x23(MCOperand x) noexcept {
+		return { op, x, DR(1), neg ? -DR(2) : DR(2) };
 	}
 
 	template <O op, bool neg = false>
-	constexpr MCO rrr_x23x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(1), neg ? -r(2) : r(2), x2 };
+	constexpr MCOP rrr_x23x(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, DR(1), neg ? -DR(2) : DR(2), x2 };
 	}
 
 	template <O op, bool neg = false>
-	constexpr MCO rri_x23(MCOperand x) noexcept {
-		return { op, x, r(1), neg ? -i(2) : i(2) };
+	constexpr MCOP rri_x23(MCOperand x) noexcept {
+		return { op, x, DR(1), neg ? -DI(2) : DI(2) };
 	}
 
 	template <O op, uint8_t lm, bool neg = false>
-	constexpr MCO rrm_x23(MCOperand x) noexcept {
-		return { op, x, r(1), neg ? -m(2, lm) : m(2, lm) };
+	constexpr MCOP rrm_x23(MCOperand x) noexcept {
+		return { op, x, DR(1), neg ? -DM(2)[lm] : DM(2)[lm] };
 	}
 
 	template <O op, uint8_t lm, bool neg = false>
-	constexpr MCO rrm_x23x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(1), neg ? -m(2, lm) : m(2, lm), x2 };
+	constexpr MCOP rrm_x23x(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, DR(1), neg ? -DM(2)[lm] : DM(2)[lm], x2 };
 	}
 
 	template <O op, bool neg = false>
-	constexpr MCO rr_x12(MCOperand x) noexcept {
-		return { op, x, r(0), neg ? -r(1) : r(1) };
+	constexpr MCOP rr_x12(MCOperand x) noexcept {
+		return { op, x, DR(0), neg ? -DR(1) : DR(1) };
 	}
 
 	template <O op, bool neg = false>
-	constexpr MCO ri_x12(MCOperand x) noexcept {
-		return { op, x, r(0), neg ? -i(1) : i(1) };
+	constexpr MCOP ri_x12(MCOperand x) noexcept {
+		return { op, x, DR(0), neg ? -DI(1) : DI(1) };
 	}
 
 	template <O op, uint8_t lm, bool neg = false>
-	constexpr MCO rm_x12(MCOperand x) noexcept {
-		return { op, x, r(0), neg ? -m(1, lm) : m(1, lm) };
+	constexpr MCOP rm_x12(MCOperand x) noexcept {
+		return { op, x, DR(0), neg ? -DM(1)[lm] : DM(1)[lm] };
 	}
 
 	template <O op, uint8_t lm, bool neg = false>
-	constexpr MCO mr_x12(MCOperand x) noexcept {
-		return { op, x, m(0, lm), neg ? -r(5) : r(5) };
+	constexpr MCOP mr_x12(MCOperand x) noexcept {
+		return { op, x, DM(0)[lm], neg ? -DR(5) : DR(5) };
 	}
 
 	template <O op, uint8_t lm, bool neg = false>
-	constexpr MCO mi_x12(MCOperand x) noexcept {
-		return { op, x, m(0, lm), neg ? -i(5) : i(5) };
+	constexpr MCOP mi_x12(MCOperand x) noexcept {
+		return { op, x, DM(0)[lm], neg ? -DI(5) : DI(5) };
 	}
 
 	template <O op, bool neg = false>
-	constexpr MCO i_xx1(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, x2, neg ? -i(0) : i(0) };
+	constexpr MCOP i_xx1(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, x2, neg ? -DI(0) : DI(0) };
 	}
 
 	template <O op>
-	constexpr MCO rr_x1x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(0), x2 };
-	}
-
-	template <O op, uint8_t lm = 0>
-	constexpr MCO rm_x1x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(0), x2 };
+	constexpr MCOP r_x1x(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, DR(0), x2 };
 	}
 
 	template <O op>
-	constexpr MCO rrr_x1x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(0), x2 };
-	}
-
-	template <O op, uint8_t lm = 0>
-	constexpr MCO rrm_x1x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(0), x2 };
-	}
-
-	template <O op, uint8_t lm = 0>
-	constexpr MCO rmr_x1x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(0), x2 };
-	}
-
-	template <O op>
-	constexpr MCO rr_x2x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, r(1), x2 };
+	constexpr MCOP rr_x2x(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, DR(1), x2 };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rm_x2x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, m(1, lm), x2 };
-	}
-
-	template <O op, uint8_t lm>
-	constexpr MCO rrm_x3x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, m(2, lm), x2 };
+	constexpr MCOP rm_x2x(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, DM(1)[lm], x2 };
 	}
 
 	template <O op, uint8_t lm, bool neg = false>
-	constexpr MCO rrm_x31(MCOperand x) noexcept {
-		return { op, x, m(2, lm), neg ? -r(0) : r(0) };
+	constexpr MCOP rrm_x31(MCOperand x) noexcept {
+		return { op, x, DM(2)[lm], neg ? -DR(0) : DR(0) };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO m_x1x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, m(0, lm), x2 };
+	constexpr MCOP m_x1x(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, DM(0)[lm], x2 };
 	}
 
 	template <O op>
-	constexpr MCO rr_xx2(MCOperand x1, MCOperand x2) noexcept {
-		return { op, x1, x2, r(1) };
+	constexpr MCOP rr_xx2(MCOperand x1, MCOperand x2) noexcept {
+		return { op, x1, x2, DR(1) };
 	}
 
 	/* 5. Atomic / Exchange */
 
 	template <O op, uint8_t lm>
-	constexpr MCO rrm_3x(MCOperand x) noexcept {
-		return { op, m(2, lm), x };
-	}
-
-	template <O op>
-	constexpr MCO rrm_1x(MCOperand x) noexcept {
-		return { op, r(0), x };
+	constexpr MCOP rrm_3x(MCOperand x) noexcept {
+		return { op, DM(2)[lm], x };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO rrm_331() noexcept {
-		return { op, m(2, lm), m(2, lm), r(0) };
+	constexpr MCOP rrm_331() noexcept {
+		return { op, DM(2)[lm], DM(2)[lm], DR(0) };
 	}
 
 	template <O op>
-	constexpr MCO rr_1x2x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, r(0), x1, r(1), x2 };
+	constexpr MCOP rr_1x2x(MCOperand x1, MCOperand x2) noexcept {
+		return { op, DR(0), x1, DR(1), x2 };
 	}
 
 	template <O op, uint8_t lm>
-	constexpr MCO mr_1x2x(MCOperand x1, MCOperand x2) noexcept {
-		return { op, m(0, lm), x1, r(5), x2 };
+	constexpr MCOP mr_1x2x(MCOperand x1, MCOperand x2) noexcept {
+		return { op, DM(0)[lm], x1, DR(5), x2 };
 	}
 
 }

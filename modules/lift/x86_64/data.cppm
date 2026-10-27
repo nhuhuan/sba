@@ -1,6 +1,5 @@
 module;
 #include <cstdint>
-#include <span>
 
 export module sba.lift:x86_64_data;
 
@@ -8,7 +7,6 @@ import sba.arch;
 import sba.ir;
 import :emit;
 import :x86_64_pattern;
-import :x86_64_dispatch;
 
 namespace SBA::Lift::X86_64 {
 
@@ -22,36 +20,31 @@ namespace SBA::Lift::X86_64 {
 
 	template <O op>
 	struct P_MOV_EXT {
-		P(rr,  { rr_12<op>() });
-		PM(rm, { rm_12<op,lm>() });
+		P(rr,  { rr_12<op>(),
+				 zero_high32<l>(DR(0)) });
+		PM(rm, { rm_12<op,lm>(),
+				 zero_high32<l>(DR(0)) });
 	};
 
 	template <uint8_t l>
 	struct P_SEXT_A {
 		template <uint8_t>
-		static constexpr Pattern _ = { { mco<O::SEXT>(R(RAX,l),R(RAX,(l/2))) } };
+		static constexpr Pattern _ = { { mcop<O::SEXT>(R(RAX)[0,l], R(RAX)[0,(l/2)]) } };
 	};
 
 	template <uint8_t l>
 	struct P_SEXT_DA {
 		template <uint8_t>
-		static constexpr Pattern _ = { { mco<O::ASHR>(R(RDX,l),R(RAX,l),l-1) } };
+		static constexpr Pattern _ = { { mcop<O::ASHR>(R(RDX)[0,l], R(RAX)[0,l], l-1) } };
 	};
 
 	/* -----------------------------------------------------------------------*/
 
-	struct MOV {
-		P(rr,  { rr_12<O::VAL>() });
-		P(ri,  { ri_12<O::VAL>() });
-		PM(rm, { rm_12<O::VAL,lm>() });
+	struct MOV : P_MOV_EXT<O::VAL> {
+		P(ri,  { ri_12<O::VAL>(),
+				 zero_high32<l>(DR(0)) });
 		PM(mr, { mr_12<O::VAL,lm>() });
 		PM(mi, { mi_12<O::VAL,lm>() });
-		template <>
-		constexpr Pattern rr<32> = { { mco<O::ZEXT>(r(0,64),r(1,32)) } };
-		template <>
-		constexpr Pattern ri<32> = { { mco<O::ZEXT>(r(0,64),i(1)) } };
-		template <>
-		constexpr Pattern rm<32, 32> = { { mco<O::ZEXT>(r(0,64),m(1,32)) } };
 	};
 	struct MOVSX : P_MOV_EXT<O::SEXT> {};
 	struct MOVZX : P_MOV_EXT<O::ZEXT> {};
@@ -65,59 +58,67 @@ namespace SBA::Lift::X86_64 {
 		P(r,   { ra_12<O::VAL>() });
 	};
 	struct XCHG {
-		P(rr,  { rr_x1<O::VAL>(R(TMP1,l)),
+		P(rr,  { r_x1<O::VAL>(R(TMP1)[0,l]),
 				 rr_12<O::VAL>(),
-				 rr_2x<O::VAL>(R(TMP1,l)) });
-		PM(rm, { rrm_x1<O::VAL>(R(TMP1,l)),
+				 zero_high32<l>(DR(0)),
+				 rr_2x<O::VAL>(R(TMP1)[0,l]),
+				 zero_high32<l>(DR(1)) });
+		PM(rm, { r_x1<O::VAL>(R(TMP1)[0,l]),
 				 rrm_13<O::VAL,lm>(),
-				 rrm_3x<O::VAL,lm>(R(TMP1,l)) });
-		P(ar,  { r_x1<O::VAL>(R(TMP1,l)),
-				 r_1x<O::VAL>(R(RAX,l)),
-				 mco<O::VAL>(R(RAX,l),R(TMP1,l)) });
+				 zero_high32<l>(DR(0)),
+				 rrm_3x<O::VAL,lm>(R(TMP1)[0,l]) });
+		P(ar,  { r_x1<O::VAL>(R(TMP1)[0,l]),
+				 r_1x<O::VAL>(R(RAX)[0,l]),
+				 zero_high32<l>(DR(0)),
+				 mcop<O::VAL>(R(RAX)[0,l], R(TMP1)[0,l]),
+				 zero_high32<l>(R(RAX)) });
 	};
 	struct CMPXCHG {
-		P(rr,  { rr_x1<O::VAL>(R(TMP3,l)),
-				 mco<O::CMP>(R(FLAGS,l),R(TMP3,l),R(RAX,l)),
-				 rr_1x2x<O::SELECT_EQ>(R(FLAGS,l),R(TMP3,l)),
-				 mco<O::SELECT_EQ>(R(RAX,l),R(FLAGS,l),R(RAX,l),R(TMP3,l)) });
-		PM(rm, { mr_x1<O::VAL,lm>(R(TMP3,l)),
-				 mco<O::CMP>(R(FLAGS,l),R(TMP3,l),R(RAX,l)),
-				 mr_1x2x<O::SELECT_EQ,lm>(R(FLAGS,l),R(TMP3,l)),
-				 mco<O::SELECT_EQ>(R(RAX,l),R(FLAGS,l),R(RAX,l),R(TMP3,l)) });
+		P(rr,  { r_x1<O::VAL>(R(TMP3)[0,l]),
+				 mcop<O::CMP>(R(FLAGS)[0,l], R(TMP3)[0,l], R(RAX)[0,l]),
+				 rr_1x2x<O::SELECT_EQ>(R(FLAGS)[0,l], R(TMP3)[0,l]),
+				 mcop<O::SELECT_EQ>(R(RAX)[0,l], R(FLAGS)[0,l], R(RAX)[0,l], R(TMP3)[0,l]) });
+		PM(rm, { m_x1<O::VAL,lm>(R(TMP3)[0,l]),
+				 mcop<O::CMP>(R(FLAGS)[0,l], R(TMP3)[0,l], R(RAX)[0,l]),
+				 mr_1x2x<O::SELECT_EQ,lm>(R(FLAGS)[0,l], R(TMP3)[0,l]),
+				 mcop<O::SELECT_EQ>(R(RAX)[0,l], R(FLAGS)[0,l], R(RAX)[0,l], R(TMP3)[0,l]) });
 	};
 	struct CMPXCHG8B {
 		template <uint8_t l>
 		static constexpr Pattern _ = { {
-			mco<O::VAL>(R(TMP3,64),m(0,64)),
-			mco<O::CAT>(R(TMP4,64),R(RDX,32),R(RAX,32)),
-			mco<O::CMP>(R(FLAGS,64),R(TMP3,64),R(TMP4,64)),
-			mco<O::CAT>(R(TMP2,64),R(RCX,32),R(RBX,32)),
-			mco<O::SELECT_EQ>(m(0,64),R(FLAGS,64),R(TMP2,64),R(TMP3,64)),
-			mco<O::SELECT_EQ>(R(RAX,32),R(FLAGS,64),R(RAX,32),R(TMP3,0,32)),
-			mco<O::SELECT_EQ>(R(RDX,32),R(FLAGS,64),R(RDX,32),R(TMP3,32,32))
+			mcop<O::VAL>(R(TMP3), DM(0)[64]),
+			mcop<O::CAT>(R(TMP4), R(RDX)[0,32], R(RAX)[0,32]),
+			mcop<O::CMP>(R(FLAGS), R(TMP3), R(TMP4)),
+			mcop<O::CAT>(R(TMP2), R(RCX)[0,32], R(RBX)[0,32]),
+			mcop<O::SELECT_EQ>(DM(0)[64], R(FLAGS), R(TMP2), R(TMP3)),
+			mcop<O::SELECT_EQ>(R(RAX)[0,32], R(FLAGS), R(RAX)[0,32], R(TMP3)[0,32]),
+			mcop<O::SELECT_EQ>(R(RDX)[0,32], R(FLAGS), R(RDX)[0,32], R(TMP3)[32,64])
 		} };
 	};
 	struct CMPXCHG16B {
 		template <uint8_t l>
 		static constexpr Pattern _ = { {
-			mco<O::VAL>(R(TMP3,128),m(0,128)),
-			mco<O::CAT>(R(TMP4,128),R(RDX,64),R(RAX,64)),
-			mco<O::CMP>(R(FLAGS,64),R(TMP3,128),R(TMP4,128)),
-			mco<O::CAT>(R(TMP2,128),R(RCX,64),R(RBX,64)),
-			mco<O::SELECT_EQ>(m(0,128),R(FLAGS,64),R(TMP2,128),R(TMP3,128)),
-			mco<O::SELECT_EQ>(R(RAX,64),R(FLAGS,64),R(RAX,64),R(TMP3,0,64)),
-			mco<O::SELECT_EQ>(R(RDX,64),R(FLAGS,64),R(RDX,64),R(TMP3,64,64))
+			mcop<O::VAL>(R(TMP3)[0,128], DM(0)[128]),
+			mcop<O::CAT>(R(TMP4)[0,128], R(RDX), R(RAX)),
+			mcop<O::CMP>(R(FLAGS), R(TMP3)[0,128], R(TMP4)[0,128]),
+			mcop<O::CAT>(R(TMP2)[0,128], R(RCX), R(RBX)),
+			mcop<O::SELECT_EQ>(DM(0)[128], R(FLAGS), R(TMP2)[0,128], R(TMP3)[0,128]),
+			mcop<O::SELECT_EQ>(R(RAX), R(FLAGS), R(RAX), R(TMP3)[0,64]),
+			mcop<O::SELECT_EQ>(R(RDX), R(FLAGS), R(RDX), R(TMP3)[64,128])
 		} };
 	};
 	struct XADD {
-		P(rr,  { rr_x1<O::VAL>(R(TMP1,l)),
+		P(rr,  { r_x1<O::VAL>(R(TMP1)[0,l]),
 				 rr_112<O::ADD>(),
-				 rr_2x<O::VAL>(R(TMP1,l)) },
-			   { rr_x12<O::CMP,true>(R(FLAGS,l)) });
-		PM(rm, { rrm_x3<O::VAL,lm>(R(TMP1,l)),
+				 zero_high32<l>(DR(0)),
+				 rr_2x<O::VAL>(R(TMP1)[0,l]),
+				 zero_high32<l>(DR(1)) },
+			   { rr_x12<O::CMP,true>(R(FLAGS)[0,l]) });
+		PM(rm, { rrm_x3<O::VAL,lm>(R(TMP1)[0,l]),
 				 rrm_331<O::ADD,lm>(),
-				 rrm_1x<O::VAL>(R(TMP1,l)) },
-			   { rrm_x31<O::CMP,lm,true>(R(FLAGS,l)) });
+				 r_1x<O::VAL>(R(TMP1)[0,l]),
+				 zero_high32<l>(DR(0)) },
+			   { rrm_x31<O::CMP,lm,true>(R(FLAGS)[0,l]) });
 	};
 	struct CMOV {
 		template <uint8_t l>
@@ -127,7 +128,7 @@ namespace SBA::Lift::X86_64 {
 			const MCInstruction& inst)
 		{
 			uint8_t cc = inst.getOperand(3).getImm();
-			MCO ops[] = { { CC[cc],r(0),R(FLAGS,l),r(2),r(1) } };
+			MCOP ops[] = { { CC[cc], DR(0), R(FLAGS)[0,l], DR(2), DR(1) } };
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
 
@@ -138,7 +139,7 @@ namespace SBA::Lift::X86_64 {
 			const MCInstruction& inst)
 		{
 			uint8_t cc = inst.getOperand(7).getImm();
-			MCO ops[] = { { CC[cc],r(0),R(FLAGS,l),m(2,lm),r(1) } };
+			MCOP ops[] = { { CC[cc], DR(0), R(FLAGS)[0,l], DM(2)[lm], DR(1) } };
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
 	};
@@ -147,7 +148,7 @@ namespace SBA::Lift::X86_64 {
 		static Instruction r(Context& ctx, Cache& cache, const MCInstruction& inst)
 		{
 			uint8_t cc = inst.getOperand(1).getImm();
-			MCO ops[] = { { CC[cc],X86_64::r(0),R(FLAGS,64),1ULL,0ULL } };
+			MCOP ops[] = { { CC[cc], DR(0), R(FLAGS), 1ULL, 0ULL } };
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
 
@@ -155,36 +156,36 @@ namespace SBA::Lift::X86_64 {
 		static Instruction m(Context& ctx, Cache& cache, const MCInstruction& inst)
 		{
 			uint8_t cc = inst.getOperand(5).getImm();
-			MCO ops[] = { { CC[cc],X86_64::m(0,lm),R(FLAGS,64),1ULL,0ULL } };
+			MCOP ops[] = { { CC[cc], DM(0)[lm], R(FLAGS), 1ULL, 0ULL } };
 			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
 		}
 	};
 	struct PUSH {
-		P(r,   { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
-				 r_x1<O::VAL>(M(RSP,l)) });
-		P(i,   { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
-				 i_x1<O::VAL>(M(RSP,l)) });
-		PM(m,  { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
-				 m_x1<O::VAL,lm>(M(RSP,l)) });
+		P(r,   { mcop<O::VAL>(R(RSP), A(RSP-bits_to_bytes(l))),
+				 r_x1<O::VAL>(M(RSP)[l]) });
+		P(i,   { mcop<O::VAL>(R(RSP), A(RSP-bits_to_bytes(l))),
+				 i_x1<O::VAL>(M(RSP)[l]) });
+		PM(m,  { mcop<O::VAL>(R(RSP), A(RSP-bits_to_bytes(l))),
+				 m_x1<O::VAL,lm>(M(RSP)[l]) });
 	};
 	struct POP {
-		P(r,   { r_1x<O::VAL>(M(RSP,l)),
-				 mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l))) });
-		PM(m,  { m_1x<O::VAL,lm>(M(RSP,l)),
-				 mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l))) });
+		P(r,   { r_1x<O::VAL>(M(RSP)[l]),
+				 mcop<O::VAL>(R(RSP), A(RSP+bits_to_bytes(l))) });
+		PM(m,  { m_1x<O::VAL,lm>(M(RSP)[l]),
+				 mcop<O::VAL>(R(RSP), A(RSP+bits_to_bytes(l))) });
 	};
 	struct PUSHF {
-		P(_,   { mco<O::VAL>(R(RSP),A(RSP,-bits_to_bytes(l))),
-				 mco<O::VAL>(M(RSP,l),R(FLAGS,l)) });
+		P(_, { mcop<O::VAL>(R(RSP), A(RSP-bits_to_bytes(l))),
+			   mcop<O::VAL>(M(RSP)[l], R(FLAGS)[0,l]) });
 	};
 	struct POPF {
-		P(_,   { mco<O::VAL>(R(FLAGS,l),M(RSP,l)),
-				 mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l))) });
+		P(_, { mcop<O::VAL>(R(FLAGS)[0,l], M(RSP)[l]),
+			   mcop<O::VAL>(R(RSP), A(RSP+bits_to_bytes(l))) });
 	};
 	struct LEAVE {
-		P(_,   { mco<O::VAL>(R(RSP),R(RBP)),
-				 mco<O::VAL>(R(RBP,l),M(RSP,l)),
-				 mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l))) });
+		P(_, { mcop<O::VAL>(R(RSP), R(RBP)),
+			   mcop<O::VAL>(R(RBP)[0,l], M(RSP)[l]),
+			   mcop<O::VAL>(R(RSP), A(RSP+bits_to_bytes(l))) });
 	};
 
 	using Mnemonics_DAT = SBA::Util::TypeList<

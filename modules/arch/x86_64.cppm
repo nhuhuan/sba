@@ -7,6 +7,8 @@ export module sba.arch:x86_64;
 
 export namespace SBA::Arch::X86_64 {
 
+	/* ------------------------------ Register ------------------------------ */
+
 	#define REGISTER_LIST(REG) \
 		REG(RIP,    64) \
 		REG(RSP,    64) \
@@ -115,7 +117,7 @@ export namespace SBA::Arch::X86_64 {
 		FLAGS = RFLAGS
 	};
 
-	static_assert((uint8_t)Reg::GS < 16, "Segment registers must fit Affine::extra range");
+	static_assert((uint8_t)Reg::GS < 16);
 
 	constexpr uint16_t length(Reg r) noexcept {
 		switch (r) {
@@ -365,6 +367,8 @@ export namespace SBA::Arch::X86_64 {
 		#undef DEF_SUBREG
 	};
 
+	/* --------------------------------- ABI -------------------------------- */
+
 	namespace ABI {
 
 		namespace SystemV {
@@ -399,6 +403,8 @@ export namespace SBA::Arch::X86_64 {
 		}
 
 	}
+
+	/* ------------------------------ Interrupt ----------------------------- */
 
 	namespace InterruptVector {
 		inline constexpr uint8_t WINDOWS_SYSCALL     = 0x2E;

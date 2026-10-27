@@ -20,7 +20,7 @@ namespace SBA::Lift {
 	using SBA::Arch::Target;
 
 	template <Target T>
-	inline std::vector<Operand> llvm_registers;
+	inline std::vector<Register> llvm_registers;
 
 	template <Target T>
 	inline const llvm::Target* target = nullptr;

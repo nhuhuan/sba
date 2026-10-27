@@ -13,6 +13,8 @@ export module sba.util:container;
 
 namespace SBA::Util {
 
+	/* ----------------------------- SplitMix64 ----------------------------- */
+
 	template <typename T>
 	struct SplitMix64 {
 		size_t operator()(T key) const noexcept {
@@ -29,6 +31,8 @@ namespace SBA::Util {
 }
 
 export namespace SBA::Util {
+
+	/* ------------------------------ PVector ------------------------------- */
 
 	template <typename T, uint64_t MaxSize>
 	class PVector {
@@ -143,6 +147,8 @@ export namespace SBA::Util {
 			return size_.load(std::memory_order_relaxed);
 		}
 	};
+
+	/* -------------------------------- PMap -------------------------------- */
 
 	template <typename Key,
 			  typename Value,

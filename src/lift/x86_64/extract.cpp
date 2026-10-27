@@ -45,7 +45,7 @@ namespace SBA::Lift {
 			);
 		}
 
-		return NO_REG.r;
+		return NO_REG;
 	}
 
 	template <>
@@ -53,9 +53,9 @@ namespace SBA::Lift {
 		const llvm::MCOperand& op) noexcept
 	{
 		const auto* ops = &op;
-		auto b = parse_r<Target::X86_64>(ops[0]).r;
-		auto i = parse_r<Target::X86_64>(ops[2]).r;
-		auto s = parse_r<Target::X86_64>(ops[4]).r;
+		auto b = parse_r<Target::X86_64>(ops[0]);
+		auto i = parse_r<Target::X86_64>(ops[2]);
+		auto s = parse_r<Target::X86_64>(ops[4]);
 
 		return Affine(
 			0,

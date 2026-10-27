@@ -1,54 +1,49 @@
 module;
-#include <cassert>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <limits>
 #include <optional>
 #include <span>
 #include <bit>
+#include <type_traits>
 
 export module sba.ir:context;
 
 import sba.util;
 import :syntax;
-import :constant;
 import :semantics;
 
 export namespace SBA::IR {
 
 	class View;
 
-	struct Context {
-		SBA::Util::PVector<uint8_t,  (1ULL << INDEX_INST)> inst;
-		SBA::Util::PVector<uint32_t, (1ULL << INDEX_IMM)>  i32;
-		SBA::Util::PVector<uint64_t, (1ULL << INDEX_IMM)>  i64;
-		SBA::Util::PVector<Affine,   (1ULL << INDEX_AFF)>  aff;
+	/* ------------------------------ Context ------------------------------- */
+
+	class Context {
+	public:
+		Context() {
+			ins.reserve(1);
+			ins[0] = Instruction::Tag(0);
+			aff.push_back(Affine(0, ANY_REG.index));
+			aff.push_back(Affine(1, ANY_REG.index));
+		}
 
 		View operator[](Instruction i) const noexcept;
 
-		Register r(Operand op) const noexcept { return op.r; }
-		Affine   a(Operand op) const noexcept { return aff[op.a.index]; }
-		uint64_t i(Operand op) const noexcept {
-			return op.i.wide ? i64[op.i.index] : i32[op.i.index];
+		template <typename T>
+		T decode(Operand op) const noexcept {
+			if constexpr (std::is_same_v<T, Register>)
+				return op.r;
+			else if constexpr (std::is_same_v<T, Affine>)
+				return aff[op.a.index];
+			else if constexpr (std::is_same_v<T, uint64_t>)
+				return op.i.wide ? i64[op.i.index] : i32[op.i.index];
+			else
+				static_assert(false);
 		}
 
-		Context() {
-			aff.push_back(
-				Affine(
-					1,
-					(uint8_t)r(ANY_REG).index,
-					0,
-					(uint8_t)r(NO_REG).index,
-					0,
-					(uint8_t)r(NO_REG).index,
-					0,
-					64,
-					0
-				)
-			);
-		}
-
-		Operand encode(Register val) noexcept { return Operand { .r = val }; }
+		Operand encode(Register val) noexcept { return val; }
 
 		template <typename C>
 		Operand encode(C& cache, uint64_t val) noexcept {
@@ -59,13 +54,7 @@ export namespace SBA::IR {
 				);
 
 				if (index)
-					return Operand {
-						.i = {
-							.type  = (uint32_t)Operand::Type::IMMEDIATE,
-							.wide  = 0,
-							.index = (uint32_t)*index
-						}
-					};
+					return Operand(Operand::Type::IMMEDIATE, (uint32_t)*index, false);
 			}
 
 			auto index = cache.i64.get_or_insert(
@@ -73,15 +62,10 @@ export namespace SBA::IR {
 				[&] { return i64.push_back(val); }
 			);
 
-			assert(index);
+			if (index)
+				return Operand(Operand::Type::IMMEDIATE, (uint32_t)*index, true);
 
-			return Operand {
-				.i = {
-					.type  = (uint32_t)Operand::Type::IMMEDIATE,
-					.wide  = 1,
-					.index = (uint32_t)*index
-				}
-			};
+			std::abort();
 		}
 
 		template <typename C>
@@ -91,14 +75,10 @@ export namespace SBA::IR {
 				[&] { return aff.push_back(val); }
 			);
 
-			assert(index);
+			if (index)
+				return Operand(Operand::Type::AFFINE, (uint32_t)*index);
 
-			return Operand {
-				.a = {
-					.type  = (uint32_t)Operand::Type::AFFINE,
-					.index = (uint32_t)*index
-				}
-			};
+			std::abort();
 		}
 
 		template <typename C>
@@ -116,27 +96,27 @@ export namespace SBA::IR {
 			if (!operands.empty())
 				h = SBA::Util::wyhash(operands.data(), operands.size_bytes(), h);
 
-			auto index = cache.inst.get_or_insert(
+			auto index = cache.ins.get_or_insert(
 				h,
 				[&]() -> std::optional<uint32_t> {
 					auto opcode_size = opcodes.size_bytes();
 					auto operand_size = operands.size_bytes();
 					auto size = opcode_size + operand_size + 1;
 
-					auto idx = inst.reserve(size);
+					auto idx = ins.reserve(size);
 					if (!idx)
 						return std::nullopt;
 
 					uint32_t offset = *idx;
-					inst[offset++] = t.tag;
+					ins[offset++] = t.tag;
 
 					if (!opcodes.empty()) {
-						std::memcpy(&inst[offset], opcodes.data(), opcode_size);
+						std::memcpy(&ins[offset], opcodes.data(), opcode_size);
 						offset += opcode_size;
 					}
 
 					if (!operands.empty()) {
-						std::memcpy(&inst[offset], operands.data(), operand_size);
+						std::memcpy(&ins[offset], operands.data(), operand_size);
 						offset += operand_size;
 					}
 
@@ -144,12 +124,17 @@ export namespace SBA::IR {
 				}
 			);
 
-			assert(index);
+			if (index)
+				return Instruction(*index);
 
-			return Instruction {
-				.index = *index
-			};
+			std::abort();
 		}
+
+	private:
+		SBA::Util::PVector<uint8_t,  (1ULL << INDEX_INS)> ins;
+		SBA::Util::PVector<uint32_t, (1ULL << INDEX_IMM)> i32;
+		SBA::Util::PVector<uint64_t, (1ULL << INDEX_IMM)> i64;
+		SBA::Util::PVector<Affine,   (1ULL << INDEX_AFF)> aff;
 	};
 
 }

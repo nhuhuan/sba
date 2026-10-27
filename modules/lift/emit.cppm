@@ -1,159 +1,150 @@
 module;
 #include <array>
-#include <cassert>
 #include <concepts>
 #include <cstdint>
 #include <span>
-#include <utility>
 
 export module sba.lift:emit;
 
 import sba.arch;
 import sba.ir;
-import :decode;
 import :cache;
+import :target;
+import :decode;
 import :parse;
 
-namespace SBA::Lift {
+export namespace SBA::Lift {
 
 	using namespace SBA::IR;
 	using SBA::Arch::Target;
 
-	struct DynamicRegister {
+	/* -------------------------- Dynamic Operands -------------------------- */
+
+	struct DRegister {
 		uint8_t index;
-		uint32_t length;
-		bool negated;
+		uint32_t offset = 0;
+		uint32_t length = 0;
+		bool negated = false;
 
-		constexpr DynamicRegister(uint8_t idx, uint32_t length = 0) noexcept
-			: index(idx), length(length), negated(false) {}
+		constexpr DRegister operator-() const noexcept {
+			return { index, offset, length, !negated };
+		}
 
-		constexpr DynamicRegister operator-() const noexcept {
-			DynamicRegister res = *this;
-			res.negated = !negated;
-			return res;
+		constexpr DRegister operator[](uint32_t s, uint32_t e) const noexcept {
+			return { index, s, e - s, negated };
+		}
+
+		constexpr DRegister operator[](uint32_t bit) const noexcept {
+			return (*this)[bit, bit + 1];
 		}
 	};
 
-	struct DynamicImmediate {
+	struct DImmediate {
 		uint8_t index;
-		bool negated;
-
-		constexpr DynamicImmediate(uint8_t idx) noexcept
-			: index(idx), negated(false) {}
-
-		constexpr DynamicImmediate operator-() const noexcept {
-			DynamicImmediate res = *this;
-			res.negated = !negated;
-			return res;
+		bool negated = false;
+		constexpr DImmediate operator-() const noexcept {
+			return { index, !negated };
 		}
 	};
 
-	struct DynamicMemory {
+	struct DMemory {
 		uint8_t index;
-		uint32_t length_m;
-		bool negated;
+		uint32_t length_m = 0;
+		bool negated = false;
 
-		constexpr DynamicMemory(uint8_t idx, uint32_t length_m) noexcept
-			: index(idx), length_m(length_m), negated(false) {}
+		constexpr DMemory operator-() const noexcept {
+			return { index, length_m, !negated };
+		}
 
-		constexpr DynamicMemory operator-() const noexcept {
-			DynamicMemory res = *this;
-			res.negated = !negated;
-			return res;
+		constexpr DMemory operator[](uint32_t l) const noexcept {
+			return { index, l, negated };
 		}
 	};
 
-	struct DynamicAffine {
+	struct DAffine {
 		uint8_t index;
-		bool negated;
-
-		constexpr DynamicAffine(uint8_t idx) noexcept
-			: index(idx), negated(false) {}
-
-		constexpr DynamicAffine operator-() const noexcept {
-			DynamicAffine res = *this;
-			res.negated = !negated;
-			return res;
+		bool negated = false;
+		constexpr DAffine operator-() const noexcept {
+			return { index, !negated };
 		}
 	};
+
+	using DR = DRegister;
+	using DI = DImmediate;
+	using DM = DMemory;
+	using DA = DAffine;
+
+	/* -------------------------- Static Operands --------------------------- */
+
+	constexpr Register R(Register reg) noexcept {
+		return reg;
+	}
+
+	constexpr Register R(RegEnum auto reg) noexcept {
+		return Register((uint8_t)reg);
+	}
+
+	constexpr Affine A(Affine addr) noexcept {
+		addr.deref = 0;
+		return addr;
+	}
+
+	constexpr Affine A(Register base) noexcept {
+		return Affine(0, base.index);
+	}
+
+	constexpr Affine A(RegEnum auto base) noexcept {
+		return A(R(base));
+	}
+
+	constexpr Affine M(Affine addr) noexcept {
+		addr.deref = 1;
+		addr.llength_m = SBA::Util::bits_to_lbytes(DEFAULT_WIDTH);
+		return addr;
+	}
+
+	constexpr Affine M(Register base) noexcept {
+		return M(A(base));
+	}
+
+	constexpr Affine M(RegEnum auto base) noexcept {
+		return M(R(base));
+	}
+
+	/* ----------------------------- MCOperand ------------------------------ */
 
 	struct MCOperand {
 		enum class Type : uint8_t {
 			OPERAND,
-			REGISTER,
 			IMMEDIATE,
 			AFFINE,
-			DYN_REGISTER,
-			DYN_IMMEDIATE,
-			DYN_MEMORY,
-			DYN_AFFINE
+			DREGISTER,
+			DIMMEDIATE,
+			DMEMORY,
+			DAFFINE
 		} type;
 
 		union {
-			DynamicRegister  r_;
-			DynamicImmediate i_;
-			DynamicMemory    m_;
-			DynamicAffine    a_;
-
-			Operand  O_;
-			Register R_;
-			uint64_t I_;
-			Affine   A_;
+			Operand    O_;
+			uint64_t   I_;
+			Affine     A_;
+			DRegister  r_;
+			DImmediate i_;
+			DMemory    m_;
+			DAffine    a_;
 		};
 
-		constexpr MCOperand() noexcept
-			: type(Type::OPERAND), O_(NO_REG) {}
+		constexpr MCOperand() noexcept : type(Type::OPERAND), O_(NO_REG) {}
+		constexpr MCOperand(Operand v) noexcept : type(Type::OPERAND), O_(v) {}
+		constexpr MCOperand(Register v) noexcept : type(Type::OPERAND), O_(v) {}
+		constexpr MCOperand(uint64_t v) noexcept : type(Type::IMMEDIATE), I_(v) {}
+		constexpr MCOperand(Affine v) noexcept : type(Type::AFFINE), A_(v) {}
+		constexpr MCOperand(DRegister v) noexcept : type(Type::DREGISTER), r_(v) {}
+		constexpr MCOperand(DImmediate v) noexcept : type(Type::DIMMEDIATE), i_(v) {}
+		constexpr MCOperand(DMemory v) noexcept : type(Type::DMEMORY), m_(v) {}
+		constexpr MCOperand(DAffine v) noexcept : type(Type::DAFFINE), a_(v) {}
 
-		constexpr MCOperand(Operand val) noexcept
-			: type(Type::OPERAND), O_(val) {}
-
-		constexpr MCOperand(Register val) noexcept
-			: type(Type::REGISTER), R_(val) {}
-
-		constexpr MCOperand(uint64_t val) noexcept
-			: type(Type::IMMEDIATE), I_(val) {}
-
-		constexpr MCOperand(Affine val) noexcept
-			: type(Type::AFFINE), A_(val) {}
-
-		constexpr MCOperand(DynamicRegister d) noexcept
-			: type(Type::DYN_REGISTER), r_(d) {}
-
-		constexpr MCOperand(DynamicImmediate d) noexcept
-			: type(Type::DYN_IMMEDIATE), i_(d) {}
-
-		constexpr MCOperand(DynamicMemory d) noexcept
-			: type(Type::DYN_MEMORY), m_(d) {}
-
-		constexpr MCOperand(DynamicAffine d) noexcept
-			: type(Type::DYN_AFFINE), a_(d) {}
-
-		constexpr MCOperand operator-() const noexcept {
-			MCOperand res = *this;
-			switch (res.type) {
-				case Type::IMMEDIATE:
-					res.I_ = -res.I_;
-					break;
-				case Type::DYN_REGISTER:
-					res.r_ = -res.r_;
-					break;
-				case Type::DYN_IMMEDIATE:
-					res.i_ = -res.i_;
-					break;
-				case Type::DYN_MEMORY:
-					res.m_ = -res.m_;
-					break;
-				case Type::DYN_AFFINE:
-					res.a_ = -res.a_;
-					break;
-				default:
-					assert(false);
-					std::unreachable();
-			}
-			return res;
-		}
-
-		template <Target T>
+		template <SBA::Arch::Target T>
 		inline Operand encode(
 			Context& ctx,
 			Cache& cache,
@@ -162,57 +153,34 @@ namespace SBA::Lift {
 			switch (type) {
 				case Type::OPERAND:
 					return O_;
-
-				case Type::REGISTER:
-					return ctx.encode(R_);
-
 				case Type::IMMEDIATE:
 					return ctx.encode(cache, I_);
-
 				case Type::AFFINE:
 					return ctx.encode(cache, A_);
-
-				case Type::DYN_REGISTER:
-					return parse_r<T>(
-						inst.getOperand(r_.index),
-						!!r_.negated,
-						r_.length
-					);
-
-				case Type::DYN_IMMEDIATE:
-					return parse_i(
-						ctx,
-						cache,
-						inst.getOperand(i_.index),
-						!!i_.negated
-					);
-
-				case Type::DYN_AFFINE:
-					return parse_a<T>(
-						ctx,
-						cache,
-						inst.getOperand(a_.index),
-						!!a_.negated
-					);
-
-				case Type::DYN_MEMORY:
-					return parse_m<T>(
-						ctx,
-						cache,
-						inst.getOperand(m_.index),
-						m_.length_m,
-						!!m_.negated
-					);
-
+				case Type::DREGISTER:
+					return parse_r<T>(inst.getOperand(r_.index),
+									  r_.offset, r_.length, r_.negated);
+				case Type::DIMMEDIATE:
+					return parse_i(ctx, cache,
+									  inst.getOperand(i_.index), i_.negated);
+				case Type::DAFFINE:
+					return parse_a<T>(ctx, cache,
+									  inst.getOperand(a_.index), a_.negated);
+				case Type::DMEMORY:
+					return parse_m<T>(ctx, cache,
+									  inst.getOperand(m_.index),
+									  m_.length_m, m_.negated);
 				default:
 					return NO_REG;
 			}
 		}
 	};
 
+	/* ---------------------------- MCOperation ----------------------------- */
+
 	struct MCOperation {
-		Operator opcode;
-		std::array<MCOperand, MAX_ARITY> operands;
+		Operator opcode = Operator::_;
+		std::array<MCOperand, MAX_ARITY> operands{};
 
 		constexpr MCOperation() noexcept = default;
 
@@ -222,7 +190,7 @@ namespace SBA::Lift {
 		constexpr MCOperation(
 			Operator opcode,
 			Args&&... args) noexcept
-			: opcode(opcode), operands{ static_cast<MCOperand>(args)... } {}
+			: opcode(opcode), operands { static_cast<MCOperand>(args)... } {}
 	};
 
 	template <Target T, typename... MCOperations>

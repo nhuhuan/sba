@@ -1,6 +1,5 @@
 module;
 #include <bit>
-#include <cassert>
 #include <cstdint>
 #include <string_view>
 #include <llvm/MC/MCInst.h>
@@ -29,14 +28,17 @@ namespace SBA::Lift {
 namespace SBA::Lift {
 
 	template <Target T>
-	inline Operand parse_r(
+	inline Register parse_r(
 		const llvm::MCOperand& op,
-		uint8_t negated = 0,
-		uint32_t length = 0) noexcept
+		uint32_t offset = 0,
+		uint32_t length = 0,
+		uint8_t negated = 0) noexcept
 	{
 		auto res = llvm_registers<T>[op.getReg()];
-		res.r.length = length ? length : res.r.length;
-		res.r.negated = negated;
+		if (length != 0)
+			res = res[offset, offset + length];
+		if (negated)
+			res = -res;
 		return res;
 	}
 
@@ -59,7 +61,7 @@ namespace SBA::Lift {
 		uint8_t negated = 0) noexcept
 	{
 		auto aff = extract_a<T>(op);
-		aff.dereferenced = 0;
+		aff.deref = 0;
 		aff.negated = negated;
 		return ctx.encode(cache, aff);
 	}
@@ -72,11 +74,10 @@ namespace SBA::Lift {
 		uint32_t length_m,
 		uint8_t negated = 0) noexcept
 	{
-		assert(std::has_single_bit(length_m) && length_m >= 8);
 		auto aff = extract_a<T>(op);
-		aff.llength_m = SBA::Util::bits_to_lbytes(length_m);
-		aff.dereferenced = 1;
+		aff.deref = 1;
 		aff.negated = negated;
+		aff.llength_m = SBA::Util::bits_to_lbytes(length_m);
 		return ctx.encode(cache, aff);
 	}
 

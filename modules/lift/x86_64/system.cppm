@@ -1,6 +1,5 @@
 module;
 #include <cstdint>
-#include <span>
 
 export module sba.lift:x86_64_system;
 
@@ -8,7 +7,6 @@ import sba.arch;
 import sba.ir;
 import :emit;
 import :x86_64_pattern;
-import :x86_64_dispatch;
 
 namespace SBA::Lift::X86_64 {
 
@@ -20,8 +18,6 @@ namespace SBA::Lift::X86_64 {
 		template <uint8_t l, uint8_t lm = l> \
 		static constexpr Pattern Suffix = { __VA_ARGS__ }
 
-	#define r(...) DynamicRegister(__VA_ARGS__)
-
 	struct P_NOOP {
 		P(_,  {});
 		P(r,  {});
@@ -29,41 +25,42 @@ namespace SBA::Lift::X86_64 {
 	};
 
 	struct P_ABORT {
-		P(_,  { mco<O::ABORT>() });
-		P(r,  { mco<O::ABORT>() });
-		P(rr, { mco<O::ABORT>() });
+		P(_,  { mcop<O::ABORT>() });
+		P(r,  { mcop<O::ABORT>() });
+		P(rr, { mcop<O::ABORT>() });
 	};
 
 	struct P_DRAIN {
-		P(_, { mco<O::DRAIN>() });
+		P(_, { mcop<O::DRAIN>() });
 	};
 
 	struct P_WAIT_E {
-		P(_,  { mco<O::WAIT_E>() });
-		P(rr, { mco<O::WAIT_E>() });
+		P(_,  { mcop<O::WAIT_E>() });
+		P(rr, { mcop<O::WAIT_E>() });
 	};
 
 	struct P_UD1 {
-		P(r,  { rr_12<O::VAL>(), mco<O::ABORT>() });
-		PM(m, { rm_12<O::VAL,lm>(), mco<O::ABORT>() });
+		P(r,  { rr_12<O::VAL>(),
+				mcop<O::ABORT>() });
+		PM(m, { rm_12<O::VAL,lm>(),
+				mcop<O::ABORT>() });
 	};
 
 	struct P_HYPERCALL {
-		P(_, { mco<O::HYPERCALL>() });
+		P(_, { mcop<O::HYPERCALL>() });
 	};
 
 	struct P_SYSTEM_METRIC {
-		P(_, { mco<O::CLB>(R(RAX,32)), mco<O::ZEXT>(R(RAX,64),R(RAX,32)),
-			   mco<O::CLB>(R(RDX,32)), mco<O::ZEXT>(R(RDX,64),R(RDX,32)) });
+		P(_, { mcop<O::CLB>(R(RAX)[0,32]),
+			   mcop<O::ZEXT>(R(RAX), R(RAX)[0,32]),
+			   mcop<O::CLB>(R(RDX)[0,32]),
+			   mcop<O::ZEXT>(R(RDX), R(RDX)[0,32]) });
 	};
 
 	struct P_RAND {
-		P(r, { r_1<O::CLB>() }, { mco<O::CLB>(R(FLAGS,l)) });
-		template <>
-		constexpr Pattern r<32> = {
-			{ r_1<O::CLB>(), mco<O::ZEXT>(r(0,64),r(0,32)) },
-			{ mco<O::CLB>(R(FLAGS,32)) }
-		};
+		P(r, { r_1<O::CLB>(),
+			   zero_high32<l>(DR(0)) },
+			 { mcop<O::CLB>(R(FLAGS)[0,l]) });
 	};
 
 	/* -----------------------------------------------------------------------*/
@@ -71,70 +68,76 @@ namespace SBA::Lift::X86_64 {
 	struct VMCALL  : P_HYPERCALL {};
 	struct VMMCALL : P_HYPERCALL {};
 	struct SYSCALL {
-		P(_, { mco<O::VAL>(R(RCX),R(RIP)),
-			   mco<O::VAL>(R(R11),R(FLAGS)),
-			   mco<O::SYSCALL>() });
+		P(_, { mcop<O::VAL>(R(RCX), R(RIP)),
+			   mcop<O::VAL>(R(R11), R(FLAGS)),
+			   mcop<O::SYSCALL>() });
 	};
 	struct SYSRET {
-		P(_, { mco<O::VAL>(R(RIP),R(RCX)),
-			   mco<O::VAL>(R(FLAGS,l),R(R11,l)),
-			   mco<O::SYSRET>() });
+		P(_, { mcop<O::VAL>(R(RIP), R(RCX)),
+			   mcop<O::VAL>(R(FLAGS)[0,l], R(R11)[0,l]),
+			   mcop<O::SYSRET>() });
 	};
 	struct SYSENTER {
-		P(_, { mco<O::VAL>(R(RCX,32),R(RSP,32)),
-			   mco<O::VAL>(R(RDX,32),R(RIP,32)),
-			   mco<O::SYSCALL>() });
+		P(_, { mcop<O::VAL>(R(RCX)[0,32], R(RSP)[0,32]),
+			   mcop<O::VAL>(R(RDX)[0,32], R(RIP)[0,32]),
+			   mcop<O::SYSCALL>() });
 	};
 	struct SYSEXIT {
-		P(_, { mco<O::VAL>(R(RIP,l),R(RDX,l)),
-			   mco<O::VAL>(R(RSP,l),R(RCX,l)),
-			   mco<O::SYSRET>() });
+		P(_, { mcop<O::VAL>(R(RIP)[0,l], R(RDX)[0,l]),
+			   mcop<O::VAL>(R(RSP)[0,l], R(RCX)[0,l]),
+			   mcop<O::SYSRET>() });
 	};
 	struct IRET {
 		template <uint8_t l>
 		static constexpr Pattern _ = { {
-			mco<O::VAL>(R(RIP,l),M(RSP,l)),
-			mco<O::VAL>(R(CS,16),M(RSP,bits_to_bytes(l),16)),
-			mco<O::VAL>(R(FLAGS,l),M(RSP,bits_to_bytes(l)*2,l)),
-			mco<O::VAL>(R(RSP),A(RSP,bits_to_bytes(l)*3)),
-			mco<O::SYSRET>()
+			mcop<O::VAL>(R(RIP)[0,l], M(RSP)[l]),
+			mcop<O::VAL>(R(CS)[0,16], M(RSP+bits_to_bytes(l))[16]),
+			mcop<O::VAL>(R(FLAGS)[0,l], M(RSP+bits_to_bytes(l)*2)[l]),
+			mcop<O::VAL>(R(RSP), A(RSP+bits_to_bytes(l)*3)),
+			mcop<O::SYSRET>()
 		} };
 		template <>
 		constexpr Pattern _<64> = { {
-			mco<O::VAL>(R(RIP),M(RSP,64)),
-			mco<O::VAL>(R(CS,16),M(RSP,8,16)),
-			mco<O::VAL>(R(FLAGS),M(RSP,16,64)),
-			mco<O::VAL>(R(SS,16),M(RSP,32,16)),
-			mco<O::VAL>(R(RSP),M(RSP,24,64)),
-			mco<O::SYSRET>()
+			mcop<O::VAL>(R(RIP), M(RSP)),
+			mcop<O::VAL>(R(CS)[0,16], M(RSP+8)[16]),
+			mcop<O::VAL>(R(FLAGS), M(RSP+16)),
+			mcop<O::VAL>(R(SS)[0,16], M(RSP+32)[16]),
+			mcop<O::VAL>(R(RSP), M(RSP+24)),
+			mcop<O::SYSRET>()
 		} };
 	};
 	struct UIRET {
 		template <uint8_t l>
 		static constexpr Pattern _ = { {
-			mco<O::VAL>(R(RIP),M(RSP,64)),
-			mco<O::VAL>(R(FLAGS),M(RSP,8,64)),
-			mco<O::VAL>(R(RSP),M(RSP,16,64))
+			mcop<O::VAL>(R(RIP), M(RSP)),
+			mcop<O::VAL>(R(FLAGS), M(RSP+8)),
+			mcop<O::VAL>(R(RSP), M(RSP+16))
 		} };
 	};
 	struct INT {
-		P(i, { mco<O::VAL>(R(RSP),A(RSP,-40)),
-			   mco<O::VAL>(M(RSP,0,64),R(RIP)),
-			   mco<O::VAL>(M(RSP,8,16),R(CS,16)),
-			   mco<O::VAL>(M(RSP,16,64),R(FLAGS)),
-			   mco<O::VAL>(M(RSP,24,64),A(RSP,40)),
-			   mco<O::VAL>(M(RSP,32,16),R(SS,16)),
-			   i_x1<O::VAL>(R(TMP1)),
-			   mco<O::VAL>(R(RIP),M(IDTR,TMP1,4,0,64)) });
+		template <uint8_t l>
+		static Instruction i(Context& ctx, Cache& cache, const MCInstruction& inst) {
+			auto vec = inst.getOperand(0).getImm();
+			const MCOP ops[] = {
+				mcop<O::VAL>(R(RSP), A(RSP-40)),
+				mcop<O::VAL>(M(RSP), R(RIP)),
+				mcop<O::VAL>(M(RSP+8)[16], R(CS)[0,16]),
+				mcop<O::VAL>(M(RSP+16), R(FLAGS)),
+				mcop<O::VAL>(M(RSP+24), A(RSP+40)),
+				mcop<O::VAL>(M(RSP+32)[16], R(SS)[0,16]),
+				mcop<O::VAL>(R(RIP), M(IDTR+(vec<<4)))
+			};
+			return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+		}
 	};
 	struct INT3 {
-		P(_, { mco<O::VAL>(R(RSP),A(RSP,-40)),
-			   mco<O::VAL>(M(RSP,0,64),R(RIP)),
-			   mco<O::VAL>(M(RSP,8,16),R(CS,16)),
-			   mco<O::VAL>(M(RSP,16,64),R(FLAGS)),
-			   mco<O::VAL>(M(RSP,24,64),A(RSP,40)),
-			   mco<O::VAL>(M(RSP,32,16),R(SS,16)),
-			   mco<O::TRAP>() });
+		P(_, { mcop<O::VAL>(R(RSP), A(RSP-40)),
+			   mcop<O::VAL>(M(RSP), R(RIP)),
+			   mcop<O::VAL>(M(RSP+8)[16], R(CS)[0,16]),
+			   mcop<O::VAL>(M(RSP+16), R(FLAGS)),
+			   mcop<O::VAL>(M(RSP+24), A(RSP+40)),
+			   mcop<O::VAL>(M(RSP+32)[16], R(SS)[0,16]),
+			   mcop<O::TRAP>() });
 	};
 	struct INT1  : INT3 {};
 	struct ICEBP : INT3 {};
@@ -142,7 +145,7 @@ namespace SBA::Lift::X86_64 {
 	struct HLT;
 		template <> struct HLT<SBA::Arch::Mode::USER>   : P_ABORT {};
 		template <> struct HLT<SBA::Arch::Mode::KERNEL> {
-			P(_, { mco<O::WAIT_I>() });
+			P(_, { mcop<O::WAIT_I>() });
 		};
 	template <SBA::Arch::Mode M>
 	struct MWAIT;
@@ -169,26 +172,26 @@ namespace SBA::Lift::X86_64 {
 	struct WBINVD     : P_DRAIN {};
 	struct WBNOINVD   : P_DRAIN {};
 	struct PAUSE {
-		P(_, { mco<O::YIELD>() });
+		P(_, { mcop<O::YIELD>() });
 	};
 	struct TRAP : P_ABORT {};
 	struct LFENCE {
-		P(_, { mco<O::FENCE_R>() });
+		P(_, { mcop<O::FENCE_R>() });
 	};
 	struct SFENCE {
-		P(_, { mco<O::FENCE_W>() });
+		P(_, { mcop<O::FENCE_W>() });
 	};
 	struct MFENCE {
-		P(_, { mco<O::FENCE_RW>() });
+		P(_, { mcop<O::FENCE_RW>() });
 	};
 	struct SERIALIZE {
-		P(_, { mco<O::FENCE_I>() });
+		P(_, { mcop<O::FENCE_I>() });
 	};
 	struct CPUID {
-		P(_, { mco<O::FENCE_I>() });
+		P(_, { mcop<O::FENCE_I>() });
 	};
 	struct CLFLUSH {
-		P(_, { mco<O::FENCE_I>() });
+		P(_, { mcop<O::FENCE_I>() });
 	};
 	struct UD1W  : P_UD1 {};
 	struct UD1L  : P_UD1 {};
@@ -202,21 +205,24 @@ namespace SBA::Lift::X86_64 {
 	struct RDTSC  : P_SYSTEM_METRIC {};
 	struct RDPMC  : P_SYSTEM_METRIC {};
 	struct RDTSCP {
-		P(_, { mco<O::CLB>(R(RAX,32)),mco<O::ZEXT>(R(RAX,64),R(RAX,32)),
-			   mco<O::CLB>(R(RDX,32)),mco<O::ZEXT>(R(RDX,64),R(RDX,32)),
-			   mco<O::CLB>(R(RCX,32)),mco<O::ZEXT>(R(RCX,64),R(RCX,32)) });
+		P(_, { mcop<O::CLB>(R(RAX)[0,32]),
+			   mcop<O::ZEXT>(R(RAX), R(RAX)[0,32]),
+			   mcop<O::CLB>(R(RDX)[0,32]),
+			   mcop<O::ZEXT>(R(RDX), R(RDX)[0,32]),
+			   mcop<O::CLB>(R(RCX)[0,32]),
+			   mcop<O::ZEXT>(R(RCX), R(RCX)[0,32]) });
 	};
 	struct RDFSBASE {
-		P(_, { r_1x<O::VAL>(R(FS,l)) });
+		P(_, { r_1x<O::VAL>(R(FS)[0,l]) });
 	};
 	struct RDGSBASE {
-		P(_, { r_1x<O::VAL>(R(GS,l)) });
+		P(_, { r_1x<O::VAL>(R(GS)[0,l]) });
 	};
 	struct WRFSBASE {
-		P(_, { r_x1<O::VAL>(R(FS,l)) });
+		P(_, { r_x1<O::VAL>(R(FS)[0,l]) });
 	};
 	struct WRGSBASE {
-		P(_, { r_x1<O::VAL>(R(GS,l)) });
+		P(_, { r_x1<O::VAL>(R(GS)[0,l]) });
 	};
 	struct RDRAND : P_RAND {};
 	struct RDSEED : P_RAND {};
@@ -242,7 +248,6 @@ namespace SBA::Lift::X86_64 {
 		RDRAND, RDSEED
 	>;
 
-	#undef r
 	#undef PM
 	#undef P
 

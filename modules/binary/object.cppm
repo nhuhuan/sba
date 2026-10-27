@@ -15,6 +15,8 @@ export namespace SBA::Binary {
 
 	using SBA::Arch::Target;
 
+	/* ------------------------------- Object ------------------------------- */
+
 	class Object {
 	public:
 		Object() = default;

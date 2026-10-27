@@ -1,5 +1,4 @@
 module;
-#include <cassert>
 #include <optional>
 #include <vector>
 #include <llvm/MC/MCInstrInfo.h>
@@ -35,7 +34,6 @@ namespace SBA::Lift {
 		const MCInstruction& inst) noexcept
 	{
 		static const std::vector<Rule> dispatch_rules = [&]() {
-			assert(info_inst<Target::X86_64>);
 			auto num_opcodes = info_inst<Target::X86_64>->getNumOpcodes();
 			std::vector<Rule> rules(num_opcodes, nullptr);
 			dispatch(rules, Mnemonics_DAT{},

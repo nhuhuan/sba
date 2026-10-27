@@ -1,5 +1,4 @@
 module;
-#include <cstddef>
 #include <cstdint>
 #include <span>
 
@@ -10,6 +9,8 @@ import :semantics;
 import :context;
 
 export namespace SBA::IR {
+
+	/* ----------------------------- Operation ------------------------------ */
 
 	struct Operation {
 		Operator opcode;
@@ -25,18 +26,16 @@ export namespace SBA::IR {
 		}
 	};
 
+	/* -------------------------------- View -------------------------------- */
+
 	class View {
 	private:
-		const Context& ctx_;
-		Instruction inst_;
+		const uint8_t* data_;
 
-		Instruction::Tag tag() const noexcept {
-			return { ctx_.inst[inst_.index] };
-		}
+		Instruction::Tag tag() const noexcept { return { *data_ }; }
 
 	public:
-		View(const Context& ctx, Instruction inst) noexcept
-			: ctx_(ctx), inst_(inst) {}
+		constexpr explicit View(const uint8_t* data) noexcept : data_(data) {}
 
 		bool valid() const noexcept {
 			return tag().valid();
@@ -75,19 +74,11 @@ export namespace SBA::IR {
 		};
 
 		Iterator begin() const noexcept {
-			const Operator* opcode_ptr = nullptr;
-			const Operand* operand_ptr = nullptr;
-
-			if (uint8_t cnt = count()) {
-				uint32_t base = inst_.index + 1;
-				opcode_ptr = (const Operator*)(&ctx_.inst[base]);
-				operand_ptr = (const Operand*)(&ctx_.inst[base + cnt]);
-			}
-
+			const auto* opcode_ptr = (const Operator*)(data_ + sizeof(Instruction::Tag));
 			return Iterator {
-				.opcode_ptr = opcode_ptr,
-				.operand_ptr = operand_ptr,
-				.index = 0
+				.opcode_ptr  = opcode_ptr,
+				.operand_ptr = (const Operand*)(opcode_ptr + count()),
+				.index       = 0
 			};
 		}
 
@@ -101,7 +92,7 @@ export namespace SBA::IR {
 	};
 
 	inline View Context::operator[](Instruction i) const noexcept {
-		return View{*this, i};
+		return View { &ins[i.index] };
 	}
 
 }

@@ -1,8 +1,6 @@
 module;
 #include <array>
-#include <cassert>
 #include <cstdint>
-#include <span>
 #include <llvm/MC/MCInstrInfo.h>
 #include <llvm/MC/MCInstrDesc.h>
 
@@ -21,10 +19,6 @@ namespace SBA::Lift {
 	using namespace SBA::IR;
 	using SBA::Arch::Target;
 
-	inline Instruction lift_invalid(Context& ctx, Cache& cache) noexcept {
-		return ctx.encode(cache, 0, {}, {});
-	}
-
 	template <Target T>
 	inline Instruction lift_fallback(
 		Context& ctx,
@@ -35,24 +29,18 @@ namespace SBA::Lift {
 		std::array<MCOperation, MAX_OPERATIONS> ops;
 		size_t count = 0;
 
-		for (int i = 0; i < desc.getNumDefs(); ++i) {
-			assert(count < ops.size());
+		for (int i = 0; i < desc.getNumDefs(); ++i)
 			ops[count++] = MCOperation(Operator::CLB,
-									   DynamicRegister((uint8_t)i));
-		}
+									   DRegister((uint8_t)i));
 
 		for (auto reg : desc.implicit_defs()) {
 			auto dst = parse_r<T>(reg);
-			if (dst != NO_REG) {
-				assert(count < ops.size());
-				ops[count++] = MCOperation(Operator::CLB, dst.r);
-			}
+			if (dst != NO_REG)
+				ops[count++] = MCOperation(Operator::CLB, dst);
 		}
 
-		if (desc.mayStore()) {
-			assert(count < ops.size());
+		if (desc.mayStore())
 			ops[count++] = MCOperation(Operator::CLB, ANY_MEM);
-		}
 
 		return emit<T>(ctx, cache, inst, { ops.data(), count });
 	}

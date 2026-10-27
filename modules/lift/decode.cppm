@@ -15,6 +15,8 @@ import sba.binary;
 
 export namespace SBA::Lift {
 
+	/* --------------------------- MCInstruction ---------------------------- */
+
 	class MCInstruction : public llvm::MCInst {
 	public:
 		uint8_t length() const noexcept { return len_; }
@@ -24,6 +26,8 @@ export namespace SBA::Lift {
 	private:
 		uint8_t len_ = 0;
 	};
+
+	/* ------------------------------ Decoder ------------------------------- */
 
 	class Decoder {
 	public:
