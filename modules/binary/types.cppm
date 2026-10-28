@@ -8,104 +8,104 @@ export module sba.binary:types;
 
 export namespace SBA::Binary {
 
-	enum class Endian : uint8_t {
-		LITTLE,
-		BIG
-	};
+    enum class Endian : uint8_t {
+        LITTLE,
+        BIG
+    };
 
-	enum class OS : uint8_t {
-		LINUX,
-		WINDOWS,
-		DARWIN,
-		UNKNOWN
-	};
+    enum class OS : uint8_t {
+        LINUX,
+        WINDOWS,
+        DARWIN,
+        UNKNOWN
+    };
 
-	enum SegmentFlag : uint8_t {
-		EXECUTABLE = 1 << 0,
-		WRITABLE   = 1 << 1,
-		READABLE   = 1 << 2
-	};
+    enum SegmentFlag : uint8_t {
+        EXECUTABLE = 1 << 0,
+        WRITABLE   = 1 << 1,
+        READABLE   = 1 << 2
+    };
 
-	enum class SymbolType : uint8_t {
-		FUNCTION,
-		OBJECT,
-		THREAD_LOCAL,
-		IFUNC,
-		NOTYPE
-	};
+    enum class SymbolType : uint8_t {
+        FUNCTION,
+        OBJECT,
+        THREAD_LOCAL,
+        IFUNC,
+        NOTYPE
+    };
 
-	enum class SymbolBind : uint8_t {
-		LOCAL,
-		GLOBAL,
-		WEAK
-	};
+    enum class SymbolBind : uint8_t {
+        LOCAL,
+        GLOBAL,
+        WEAK
+    };
 
-	enum class SymbolScope : uint8_t {
-		PRIVATE,
-		PUBLIC,
-		FINAL
-	};
+    enum class SymbolScope : uint8_t {
+        PRIVATE,
+        PUBLIC,
+        FINAL
+    };
 
-	enum class SymbolMode : uint8_t {
-		RELATIVE,
-		ABSOLUTE,
-		UNDEFINED,
-		UNALLOCATED
-	};
+    enum class SymbolMode : uint8_t {
+        RELATIVE,
+        ABSOLUTE,
+        UNDEFINED,
+        UNALLOCATED
+    };
 
-	/* ------------------------------ Segment ------------------------------- */
+    /* ------------------------------ Segment ------------------------------- */
 
-	struct Segment {
-		uint64_t	address;
-		uint64_t	size;
-		uint64_t	file_size;
-		uint8_t		flags;
-		std::unique_ptr<uint8_t[]> bytes;
+    struct Segment {
+        uint64_t    address;
+        uint64_t    size;
+        uint64_t    file_size;
+        uint8_t     flags;
+        std::unique_ptr<uint8_t[]> bytes;
 
-		bool executable() const { return flags & EXECUTABLE; }
-		bool writable()   const { return flags & WRITABLE; }
-		bool readable()   const { return flags & READABLE; }
+        bool executable() const { return flags & EXECUTABLE; }
+        bool writable()   const { return flags & WRITABLE; }
+        bool readable()   const { return flags & READABLE; }
 
-		bool contains(uint64_t addr) const;
-		std::optional<uint64_t>
-			read(uint64_t addr, uint8_t width, Endian endian) const;
-	};
+        bool contains(uint64_t addr) const;
+        std::optional<uint64_t>
+            read(uint64_t addr, uint8_t width, Endian endian) const;
+    };
 
-	/* ------------------------------- Symbol ------------------------------- */
+    /* ------------------------------- Symbol ------------------------------- */
 
-	struct Symbol {
-		uint64_t	address;
-		uint64_t	size;
-		SymbolType	type;
-		SymbolBind	bind;
-		SymbolScope	scope;
-		SymbolMode	mode;
-		std::string	name;
-	};
+    struct Symbol {
+        uint64_t    address;
+        uint64_t    size;
+        SymbolType  type;
+        SymbolBind  bind;
+        SymbolScope scope;
+        SymbolMode  mode;
+        std::string name;
+    };
 
-	/* ------------------------------- Export ------------------------------- */
+    /* ------------------------------- Export ------------------------------- */
 
-	struct Export : public Symbol {
-		uint32_t	ordinal = 0;
-		std::string	forward_library;
-		std::string	forward_symbol;
-	};
+    struct Export : public Symbol {
+        uint32_t    ordinal = 0;
+        std::string forward_library;
+        std::string forward_symbol;
+    };
 
-	/* ------------------------------- Import ------------------------------- */
+    /* ------------------------------- Import ------------------------------- */
 
-	struct Import : public Symbol {
-		uint32_t	ordinal = 0;
-		std::string	library_name;
-	};
+    struct Import : public Symbol {
+        uint32_t    ordinal = 0;
+        std::string library_name;
+    };
 
-	/* ----------------------------- Relocation ----------------------------- */
+    /* ----------------------------- Relocation ----------------------------- */
 
-	struct Relocation {
-		uint64_t	address;
-		uint64_t	target;
-		int64_t		addend;
-		uint32_t	type;
-		std::string	name;
-	};
+    struct Relocation {
+        uint64_t    address;
+        uint64_t    target;
+        int64_t     addend;
+        uint32_t    type;
+        std::string name;
+    };
 
 }

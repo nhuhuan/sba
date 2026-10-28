@@ -13,185 +13,185 @@ export module sba.util:container;
 
 namespace SBA::Util {
 
-	/* ----------------------------- SplitMix64 ----------------------------- */
+    /* ----------------------------- SplitMix64 ----------------------------- */
 
-	template <typename T>
-	struct SplitMix64 {
-		size_t operator()(T key) const noexcept {
-			uint64_t x = (uint64_t)key;
-			x ^= x >> 30;
-			x *= 0xbf58476d1ce4e5b9ULL;
-			x ^= x >> 27;
-			x *= 0x94d049bb133111ebULL;
-			x ^= x >> 31;
-			return x;
-		}
-	};
+    template <typename T>
+    struct SplitMix64 {
+        size_t operator()(T key) const noexcept {
+            uint64_t x = (uint64_t)key;
+            x ^= x >> 30;
+            x *= 0xbf58476d1ce4e5b9ULL;
+            x ^= x >> 27;
+            x *= 0x94d049bb133111ebULL;
+            x ^= x >> 31;
+            return x;
+        }
+    };
 
 }
 
 export namespace SBA::Util {
 
-	/* ------------------------------ PVector ------------------------------- */
+    /* ------------------------------ PVector ------------------------------- */
 
-	template <typename T, uint64_t MaxSize>
-	class PVector {
-	private:
-		static constexpr size_t SEGMENT_SIZE = (1 << 21) / sizeof(T);
-		static constexpr size_t NUM_SEGMENTS = (1ULL << 32) / SEGMENT_SIZE;
+    template <typename T, uint64_t MaxSize>
+    class PVector {
+    private:
+        static constexpr size_t SEGMENT_SIZE = (1 << 21) / sizeof(T);
+        static constexpr size_t NUM_SEGMENTS = (1ULL << 32) / SEGMENT_SIZE;
 
-		using Segment = std::array<T, SEGMENT_SIZE>;
-		std::atomic<uint32_t> size_;
-		std::atomic<Segment*> segments_[NUM_SEGMENTS];
-		std::mutex alloc_;
+        using Segment = std::array<T, SEGMENT_SIZE>;
+        std::atomic<uint32_t> size_;
+        std::atomic<Segment*> segments_[NUM_SEGMENTS];
+        std::mutex alloc_;
 
-		inline Segment* segment(uint32_t index) noexcept {
-			auto* seg = segments_[index].load(std::memory_order_acquire);
-			if (!seg) {
-				std::lock_guard<std::mutex> lock(alloc_);
-				seg = segments_[index].load(std::memory_order_relaxed);
-				if (!seg) {
-					seg = new Segment();
-					segments_[index].store(seg, std::memory_order_release);
-				}
-			}
-			return seg;
-		}
+        inline Segment* segment(uint32_t index) noexcept {
+            auto* seg = segments_[index].load(std::memory_order_acquire);
+            if (!seg) {
+                std::lock_guard<std::mutex> lock(alloc_);
+                seg = segments_[index].load(std::memory_order_relaxed);
+                if (!seg) {
+                    seg = new Segment();
+                    segments_[index].store(seg, std::memory_order_release);
+                }
+            }
+            return seg;
+        }
 
-	public:
-		PVector() noexcept : size_(0) {
-			for (size_t i = 0; i < NUM_SEGMENTS; ++i)
-				segments_[i].store(nullptr, std::memory_order_relaxed);
-		}
+    public:
+        PVector() noexcept : size_(0) {
+            for (size_t i = 0; i < NUM_SEGMENTS; ++i)
+                segments_[i].store(nullptr, std::memory_order_relaxed);
+        }
 
-		~PVector() {
-			for (size_t i = 0; i < NUM_SEGMENTS; ++i)
-				delete segments_[i].load(std::memory_order_relaxed);
-		}
+        ~PVector() {
+            for (size_t i = 0; i < NUM_SEGMENTS; ++i)
+                delete segments_[i].load(std::memory_order_relaxed);
+        }
 
-		PVector(const PVector&) = delete;
-		PVector& operator=(const PVector&) = delete;
+        PVector(const PVector&) = delete;
+        PVector& operator=(const PVector&) = delete;
 
-		std::optional<uint32_t> push_back(T val) noexcept {
-			auto index = reserve(1);
-			if (!index)
-				return std::nullopt;
+        std::optional<uint32_t> push_back(T val) noexcept {
+            auto index = reserve(1);
+            if (!index)
+                return std::nullopt;
 
-			auto s_index = *index / SEGMENT_SIZE;
-			auto s_offset = *index % SEGMENT_SIZE;
-			(*segment(s_index))[s_offset] = val;
-			return index;
-		}
+            auto s_index = *index / SEGMENT_SIZE;
+            auto s_offset = *index % SEGMENT_SIZE;
+            (*segment(s_index))[s_offset] = val;
+            return index;
+        }
 
-		std::optional<uint32_t> reserve(uint32_t count) noexcept {
-			uint32_t index = size_.load(std::memory_order_relaxed);
+        std::optional<uint32_t> reserve(uint32_t count) noexcept {
+            uint32_t index = size_.load(std::memory_order_relaxed);
 
-			while (true) {
-				uint64_t remaining = SEGMENT_SIZE - (index % SEGMENT_SIZE);
-				uint64_t curr = (uint64_t)index + remaining * (count > remaining);
-				uint64_t next = curr + count;
+            while (true) {
+                uint64_t remaining = SEGMENT_SIZE - (index % SEGMENT_SIZE);
+                uint64_t curr = (uint64_t)index + remaining * (count > remaining);
+                uint64_t next = curr + count;
 
-				if (next > MaxSize)
-					return std::nullopt;
+                if (next > MaxSize)
+                    return std::nullopt;
 
-				if (size_.compare_exchange_weak(
-					index,
-					(uint32_t)next,
-					std::memory_order_relaxed))
-				{
-					segment((uint32_t)curr / SEGMENT_SIZE);
-					return (uint32_t)curr;
-				}
-			}
-		}
+                if (size_.compare_exchange_weak(
+                    index,
+                    (uint32_t)next,
+                    std::memory_order_relaxed))
+                {
+                    segment((uint32_t)curr / SEGMENT_SIZE);
+                    return (uint32_t)curr;
+                }
+            }
+        }
 
-		T& operator[](uint32_t index) noexcept {
-			auto s_index = index / SEGMENT_SIZE;
-			auto s_offset = index % SEGMENT_SIZE;
-			return (*segment(s_index))[s_offset];
-		}
+        T& operator[](uint32_t index) noexcept {
+            auto s_index = index / SEGMENT_SIZE;
+            auto s_offset = index % SEGMENT_SIZE;
+            return (*segment(s_index))[s_offset];
+        }
 
-		const T& operator[](uint32_t index) const noexcept {
-			auto s_index = index / SEGMENT_SIZE;
-			auto s_offset = index % SEGMENT_SIZE;
-			auto* seg = segments_[s_index].load(std::memory_order_acquire);
-			return (*seg)[s_offset];
-		}
+        const T& operator[](uint32_t index) const noexcept {
+            auto s_index = index / SEGMENT_SIZE;
+            auto s_offset = index % SEGMENT_SIZE;
+            auto* seg = segments_[s_index].load(std::memory_order_acquire);
+            return (*seg)[s_offset];
+        }
 
-		std::vector<T> drain() {
-			auto total_size = size();
-			std::vector<T> vec;
-			vec.reserve(total_size);
+        std::vector<T> drain() {
+            auto total_size = size();
+            std::vector<T> vec;
+            vec.reserve(total_size);
 
-			uint32_t total_segs = (total_size + SEGMENT_SIZE - 1) / SEGMENT_SIZE;
+            uint32_t total_segs = (total_size + SEGMENT_SIZE - 1) / SEGMENT_SIZE;
 
-			for (uint32_t s_index = 0; s_index < total_segs; ++s_index) {
-				auto* seg = segments_[s_index].exchange(
-					nullptr,
-					std::memory_order_relaxed
-				);
+            for (uint32_t s_index = 0; s_index < total_segs; ++s_index) {
+                auto* seg = segments_[s_index].exchange(
+                    nullptr,
+                    std::memory_order_relaxed
+                );
 
-				if (seg) {
-					uint32_t s_rem = total_size - s_index * SEGMENT_SIZE;
-					uint32_t s_size = std::min((uint32_t)SEGMENT_SIZE, s_rem);
-					vec.insert(vec.end(), seg->begin(), seg->begin() + s_size);
-					delete seg;
-				}
-			}
+                if (seg) {
+                    uint32_t s_rem = total_size - s_index * SEGMENT_SIZE;
+                    uint32_t s_size = std::min((uint32_t)SEGMENT_SIZE, s_rem);
+                    vec.insert(vec.end(), seg->begin(), seg->begin() + s_size);
+                    delete seg;
+                }
+            }
 
-			size_.store(0, std::memory_order_relaxed);
-			return vec;
-		}
+            size_.store(0, std::memory_order_relaxed);
+            return vec;
+        }
 
-		uint32_t size() const noexcept {
-			return size_.load(std::memory_order_relaxed);
-		}
-	};
+        uint32_t size() const noexcept {
+            return size_.load(std::memory_order_relaxed);
+        }
+    };
 
-	/* -------------------------------- PMap -------------------------------- */
+    /* -------------------------------- PMap -------------------------------- */
 
-	template <typename Key,
-			  typename Value,
-			  typename Hash = SplitMix64<Key>,
-			  typename KeyEqual = std::equal_to<Key>>
-	class PMap {
-	private:
-		static constexpr size_t NUM_SHARDS = (1 << 7);
+    template <typename Key,
+              typename Value,
+              typename Hash = SplitMix64<Key>,
+              typename KeyEqual = std::equal_to<Key>>
+    class PMap {
+    private:
+        static constexpr size_t NUM_SHARDS = (1 << 7);
 
-		struct Shard {
-			std::mutex mutex;
-			std::unordered_map<Key, Value, Hash, KeyEqual> map;
-		};
+        struct Shard {
+            std::mutex mutex;
+            std::unordered_map<Key, Value, Hash, KeyEqual> map;
+        };
 
-		std::unique_ptr<Shard[]> shards;
+        std::unique_ptr<Shard[]> shards;
 
-	public:
-		PMap() : shards(new Shard[NUM_SHARDS]) {}
+    public:
+        PMap() : shards(new Shard[NUM_SHARDS]) {}
 
-		PMap(Hash h, KeyEqual eq) : shards(new Shard[NUM_SHARDS]) {
-			for (size_t i = 0; i < NUM_SHARDS; ++i)
-				shards[i].map = std::unordered_map
-								<Key, Value, Hash, KeyEqual>(0, h, eq);
-		}
+        PMap(Hash h, KeyEqual eq) : shards(new Shard[NUM_SHARDS]) {
+            for (size_t i = 0; i < NUM_SHARDS; ++i)
+                shards[i].map = std::unordered_map
+                                <Key, Value, Hash, KeyEqual>(0, h, eq);
+        }
 
-		PMap(const PMap&) = delete;
-		PMap& operator=(const PMap&) = delete;
+        PMap(const PMap&) = delete;
+        PMap& operator=(const PMap&) = delete;
 
-		template <typename Fn>
-		std::optional<Value> get_or_insert(const Key& key, Fn insert) {
-			size_t h = Hash{}(key);
-			size_t idx = h % NUM_SHARDS;
-			auto& shard = shards[idx];
-			std::lock_guard<std::mutex> lock(shard.mutex);
-			auto it = shard.map.find(key);
-			if (it != shard.map.end())
-				return it->second;
-			auto val = insert();
-			if (!val)
-				return std::nullopt;
-			shard.map.insert({key, *val});
-			return val;
-		}
-	};
+        template <typename Fn>
+        std::optional<Value> get_or_insert(const Key& key, Fn insert) {
+            size_t h = Hash{}(key);
+            size_t idx = h % NUM_SHARDS;
+            auto& shard = shards[idx];
+            std::lock_guard<std::mutex> lock(shard.mutex);
+            auto it = shard.map.find(key);
+            if (it != shard.map.end())
+                return it->second;
+            auto val = insert();
+            if (!val)
+                return std::nullopt;
+            shard.map.insert({key, *val});
+            return val;
+        }
+    };
 
 }

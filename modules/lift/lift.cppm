@@ -11,30 +11,30 @@ export import :cache;
 
 namespace SBA::Lift {
 
-	using namespace SBA::IR;
+    using namespace SBA::IR;
 
-	template <SBA::Arch::Target T, SBA::Arch::Mode M>
-	std::optional<Instruction> lift_target(
-		Context& ctx,
-		Cache& cache,
-		const MCInstruction& inst
-	) noexcept;
+    template <SBA::Arch::Target T, SBA::Arch::Mode M>
+    std::optional<Instruction> lift_target(
+        Context& ctx,
+        Cache& cache,
+        const MCInstruction& inst
+    ) noexcept;
 
 }
 
 export namespace SBA::Lift {
 
-	template <SBA::Arch::Target T, SBA::Arch::Mode M = SBA::Arch::Mode::USER>
-	inline Instruction lift(
-		Context& ctx,
-		Cache& cache,
-		const MCInstruction& inst)
-	{
-		if (!inst.valid())
-			return INVALID_INS;
+    template <SBA::Arch::Target T, SBA::Arch::Mode M = SBA::Arch::Mode::USER>
+    inline Instruction lift(
+        Context& ctx,
+        Cache& cache,
+        const MCInstruction& inst)
+    {
+        if (!inst.valid())
+            return INVALID_INS;
 
-		auto op = lift_target<T, M>(ctx, cache, inst);
-		return op ? *op : lift_fallback<T>(ctx, cache, inst);
-	}
+        auto op = lift_target<T, M>(ctx, cache, inst);
+        return op ? *op : lift_fallback<T>(ctx, cache, inst);
+    }
 
 }

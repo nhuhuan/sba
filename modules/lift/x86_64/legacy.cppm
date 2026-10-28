@@ -8,43 +8,43 @@ import :x86_64_pattern;
 
 namespace SBA::Lift::X86_64 {
 
-	#define P(Suffix, ...) \
-		template <uint8_t l> \
-		static constexpr Pattern Suffix = { __VA_ARGS__ }
+    #define P(Suffix, ...) \
+        template <uint8_t l> \
+        static constexpr Pattern Suffix = { __VA_ARGS__ }
 
-	#define PM(Suffix, ...) \
-		template <uint8_t l, uint8_t lm = l> \
-		static constexpr Pattern Suffix = { __VA_ARGS__ }
+    #define PM(Suffix, ...) \
+        template <uint8_t l, uint8_t lm = l> \
+        static constexpr Pattern Suffix = { __VA_ARGS__ }
 
-	struct P_LEGACY_ABORT {
-		P(_,   { mcop<O::ABORT>() });
-		P(i,   { mcop<O::ABORT>() });
-		P(rr,  { mcop<O::ABORT>() });
-		PM(rm, { mcop<O::ABORT>() });
-		PM(mr, { mcop<O::ABORT>() });
-	};
+    struct P_LEGACY_ABORT {
+        P(_,   { mcop<O::ABORT>() });
+        P(i,   { mcop<O::ABORT>() });
+        P(rr,  { mcop<O::ABORT>() });
+        PM(rm, { mcop<O::ABORT>() });
+        PM(mr, { mcop<O::ABORT>() });
+    };
 
-	/* -----------------------------------------------------------------------*/
+    /* -----------------------------------------------------------------------*/
 
-	struct AAA    : P_LEGACY_ABORT {};
-	struct AAS    : P_LEGACY_ABORT {};
-	struct DAA    : P_LEGACY_ABORT {};
-	struct DAS    : P_LEGACY_ABORT {};
-	struct AAD    : P_LEGACY_ABORT {};
-	struct AAM    : P_LEGACY_ABORT {};
-	struct LDS    : P_LEGACY_ABORT {};
-	struct LES    : P_LEGACY_ABORT {};
-	struct ARPL   : P_LEGACY_ABORT {};
-	struct SALC   : P_LEGACY_ABORT {};
-	struct INTO   : P_LEGACY_ABORT {};
-	struct BOUNDS : P_LEGACY_ABORT {};
+    struct AAA    : P_LEGACY_ABORT {};
+    struct AAS    : P_LEGACY_ABORT {};
+    struct DAA    : P_LEGACY_ABORT {};
+    struct DAS    : P_LEGACY_ABORT {};
+    struct AAD    : P_LEGACY_ABORT {};
+    struct AAM    : P_LEGACY_ABORT {};
+    struct LDS    : P_LEGACY_ABORT {};
+    struct LES    : P_LEGACY_ABORT {};
+    struct ARPL   : P_LEGACY_ABORT {};
+    struct SALC   : P_LEGACY_ABORT {};
+    struct INTO   : P_LEGACY_ABORT {};
+    struct BOUNDS : P_LEGACY_ABORT {};
 
-	using Mnemonics_LGC = SBA::Util::TypeList<
-		AAA, AAS, DAA, DAS, AAD, AAM,
-		LDS, LES, ARPL, SALC, INTO, BOUNDS
-	>;
+    using Mnemonics_LGC = SBA::Util::TypeList<
+        AAA, AAS, DAA, DAS, AAD, AAM,
+        LDS, LES, ARPL, SALC, INTO, BOUNDS
+    >;
 
-	#undef PM
-	#undef P
+    #undef PM
+    #undef P
 
 }

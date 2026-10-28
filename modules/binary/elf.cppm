@@ -13,19 +13,19 @@ import :error;
 
 export namespace SBA::Binary {
 
-	using SBA::Arch::Target;
+    using SBA::Arch::Target;
 
-	std::expected<void, Error> parse_elf(
-		llvm::object::ObjectFile* object,
-		Target& arch,
-		OS& os,
-		Endian& endian,
-		std::optional<uint64_t>& entry,
-		std::vector<Segment>& segments,
-		std::vector<Symbol>& symbols,
-		std::vector<Export>& exports,
-		std::vector<Import>& imports,
-		std::vector<Relocation>& relocations
-	);
+    std::expected<void, Error> parse_elf(
+        llvm::object::ObjectFile* object,
+        Target& arch,
+        OS& os,
+        Endian& endian,
+        std::optional<uint64_t>& entry,
+        std::vector<Segment>& segments,
+        std::vector<Symbol>& symbols,
+        std::vector<Export>& exports,
+        std::vector<Import>& imports,
+        std::vector<Relocation>& relocations
+    );
 
 }

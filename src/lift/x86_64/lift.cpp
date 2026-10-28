@@ -22,54 +22,54 @@ import :x86_64_legacy;
 
 namespace SBA::Lift {
 
-	using namespace SBA::IR;
-	using namespace SBA::Lift::X86_64;
-	using SBA::Arch::Target;
-	using SBA::Arch::Mode;
+    using namespace SBA::IR;
+    using namespace SBA::Lift::X86_64;
+    using SBA::Arch::Target;
+    using SBA::Arch::Mode;
 
-	template <Mode M>
-	inline std::optional<Instruction> lift_x86_64(
-		Context& ctx,
-		Cache& cache,
-		const MCInstruction& inst) noexcept
-	{
-		static const std::vector<Rule> dispatch_rules = [&]() {
-			auto num_opcodes = info_inst<Target::X86_64>->getNumOpcodes();
-			std::vector<Rule> rules(num_opcodes, nullptr);
-			dispatch(rules, Mnemonics_DAT{},
-							Mnemonics_ALU{},
-							Mnemonics_STR{},
-							Mnemonics_CTL{},
-							Mnemonics_SYS<M>{},
-							Mnemonics_VEC{},
-							Mnemonics_HPV<M>{},
-							Mnemonics_LGC{});
-			return rules;
-		}();
+    template <Mode M>
+    inline std::optional<Instruction> lift_x86_64(
+        Context& ctx,
+        Cache& cache,
+        const MCInstruction& inst) noexcept
+    {
+        static const std::vector<Rule> dispatch_rules = [&]() {
+            auto num_opcodes = info_inst<Target::X86_64>->getNumOpcodes();
+            std::vector<Rule> rules(num_opcodes, nullptr);
+            dispatch(rules, Mnemonics_DAT{},
+                            Mnemonics_ALU{},
+                            Mnemonics_STR{},
+                            Mnemonics_CTL{},
+                            Mnemonics_SYS<M>{},
+                            Mnemonics_VEC{},
+                            Mnemonics_HPV<M>{},
+                            Mnemonics_LGC{});
+            return rules;
+        }();
 
-		unsigned opcode = inst.getOpcode();
-		if (opcode < dispatch_rules.size() && dispatch_rules[opcode])
-			return dispatch_rules[opcode](ctx, cache, inst);
+        unsigned opcode = inst.getOpcode();
+        if (opcode < dispatch_rules.size() && dispatch_rules[opcode])
+            return dispatch_rules[opcode](ctx, cache, inst);
 
-		return std::nullopt;
-	}
+        return std::nullopt;
+    }
 
-	template <>
-	std::optional<Instruction> lift_target<Target::X86_64, Mode::USER>(
-		Context& ctx,
-		Cache& cache,
-		const MCInstruction& inst) noexcept
-	{
-		return lift_x86_64<SBA::Arch::Mode::USER>(ctx, cache, inst);
-	}
+    template <>
+    std::optional<Instruction> lift_target<Target::X86_64, Mode::USER>(
+        Context& ctx,
+        Cache& cache,
+        const MCInstruction& inst) noexcept
+    {
+        return lift_x86_64<SBA::Arch::Mode::USER>(ctx, cache, inst);
+    }
 
-	template <>
-	std::optional<Instruction> lift_target<Target::X86_64, Mode::KERNEL>(
-		Context& ctx,
-		Cache& cache,
-		const MCInstruction& inst) noexcept
-	{
-		return lift_x86_64<SBA::Arch::Mode::KERNEL>(ctx, cache, inst);
-	}
+    template <>
+    std::optional<Instruction> lift_target<Target::X86_64, Mode::KERNEL>(
+        Context& ctx,
+        Cache& cache,
+        const MCInstruction& inst) noexcept
+    {
+        return lift_x86_64<SBA::Arch::Mode::KERNEL>(ctx, cache, inst);
+    }
 
 }
