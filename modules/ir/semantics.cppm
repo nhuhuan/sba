@@ -23,6 +23,7 @@ export namespace SBA::IR {
         OP(FENCE_R,    0, "fence_r",    "memory_barrier_read")                \
         OP(FENCE_W,    0, "fence_w",    "memory_barrier_write")               \
         OP(FENCE_RW,   0, "fence_rw",   "memory_barrier_full")                \
+        OP(ATOMIC,     0, "atomic",     "atomic")                             \
         /* Arity 1 */                                                         \
         OP(CLB,        1, "clb",        "clobbered")                          \
         OP(UNDEF,      1, "undef",      "undefined")                          \

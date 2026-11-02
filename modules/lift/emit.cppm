@@ -215,6 +215,9 @@ namespace SBA::Lift {
             }
         };
 
+        if (inst.atomic())
+            opcodes[opcode_count++] = Operator::ATOMIC;
+
         (serialize(ops), ...);
 
         return ctx.encode(

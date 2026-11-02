@@ -11,6 +11,7 @@ namespace llvm {
 
 export module sba.lift:decode;
 
+import sba.arch;
 import sba.binary;
 
 export namespace SBA::Lift {
@@ -21,14 +22,18 @@ export namespace SBA::Lift {
     public:
         uint8_t length() const noexcept { return len_; }
         void length(uint8_t len) noexcept { len_ = len; }
+        bool atomic() const noexcept { return atomic_; }
+        void atomic(bool a) noexcept { atomic_ = a; }
         bool valid() const noexcept { return getOpcode() != 0; }
 
     private:
         uint8_t len_ = 0;
+        bool atomic_ = false;
     };
 
     /* ------------------------------ Decoder ------------------------------- */
 
+    template <SBA::Arch::Target T>
     class Decoder {
     public:
         Decoder(const SBA::Binary::Object& object);

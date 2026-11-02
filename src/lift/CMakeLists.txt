@@ -23,7 +23,7 @@ target_sources(lift
                 ${CMAKE_SOURCE_DIR}/modules/lift/x86_64/hypervisor.cppm
                 ${CMAKE_SOURCE_DIR}/modules/lift/x86_64/legacy.cppm
     PRIVATE
-        decode.cpp
+        x86_64/decode.cpp
         x86_64/extract.cpp
         x86_64/lift.cpp
 )

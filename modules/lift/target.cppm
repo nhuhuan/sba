@@ -37,4 +37,7 @@ namespace SBA::Lift {
     template <Target T>
     inline const llvm::MCAsmInfo* info_asm = nullptr;
 
+    template <Target T>
+    inline unsigned atomic_prefix_opcode = 0;
+
 }
