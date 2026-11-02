@@ -24,11 +24,11 @@ namespace SBA::Lift::X86_64 {
         static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             int32_t rel = inst.getOperand(0).getImm();
-            MCOP ops[] = {
+            MCOP core[] = {
                 mcop<O::CMP>(R(TMP1), R(RCX)[0,l_rcx], 0ULL),
                 mcop<O::SELECT_EQ>(R(RIP), R(TMP1), A(RIP+rel), R(RIP))
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
 
@@ -38,13 +38,13 @@ namespace SBA::Lift::X86_64 {
         static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             int32_t rel = inst.getOperand(0).getImm();
-            MCOP ops[] = {
+            MCOP core[] = {
                 mcop<O::VAL>(R(RCX), A(RCX-1)),
                 mcop<cc>(R(TMP1), R(FLAGS), A(RIP+rel), R(RIP)),
                 mcop<O::CMP>(R(TMP2), R(RCX), 0ULL),
                 mcop<O::SELECT_NE>(R(RIP), R(TMP2), R(TMP1), R(RIP))
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
 
@@ -61,10 +61,10 @@ namespace SBA::Lift::X86_64 {
         {
             uint8_t cc = inst.getOperand(1).getImm();
             int32_t rel = inst.getOperand(0).getImm();
-            MCOP ops[] = {
+            MCOP core[] = {
                 { CC[cc], R(RIP), R(FLAGS), A(RIP+rel), R(RIP) }
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
     struct CALL {
@@ -87,11 +87,11 @@ namespace SBA::Lift::X86_64 {
         static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             int32_t imm = inst.getOperand(0).getImm();
-            MCOP ops[] = {
+            MCOP core[] = {
                 mcop<O::VAL>(R(RIP), M(RSP)[l]),
                 mcop<O::VAL>(R(RSP), A(RSP+(bits_to_bytes(l)+imm)))
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
     struct JCXZ   : P_JCXZ<16> {};
@@ -104,12 +104,12 @@ namespace SBA::Lift::X86_64 {
         static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             int32_t rel = inst.getOperand(0).getImm();
-            MCOP ops[] = {
+            MCOP core[] = {
                 mcop<O::VAL>(R(RCX), A(RCX-1)),
                 mcop<O::CMP>(R(TMP1), R(RCX), 0ULL),
                 mcop<O::SELECT_NE>(R(RIP), R(TMP1), A(RIP+rel), R(RIP))
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
 

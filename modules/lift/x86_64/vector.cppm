@@ -41,6 +41,37 @@ namespace SBA::Lift::X86_64 {
         PM(rm, { rm_x12<O::CMP,l_vec>(R(FLAGS)) });
     };
 
+    template <uint8_t l_lane>
+    struct P_PEXTR {
+        template <uint8_t l>
+        static Instruction rri(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint8_t lane = inst.getOperand(2).getImm() % (128 / l_lane);
+            DRegister src { 1, (uint32_t)(lane * l_lane), l_lane };
+            MCOP core[] = {
+                (l_lane < 64)
+                    ? mcop<O::ZEXT>(DR(0)[0,64], src)
+                    : mcop<O::VAL>(DR(0)[0,64], src)
+            };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+        }
+
+        template <uint8_t l, uint8_t lm = l>
+        static Instruction mri(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint8_t lane = inst.getOperand(6).getImm() % (128 / l_lane);
+            DRegister src { 5, (uint32_t)(lane * l_lane), l_lane };
+            MCOP core[] = { mcop<O::VAL>(DM(0)[l_lane], src) };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+        }
+    };
+
     /* -----------------------------------------------------------------------*/
 
     struct MOVAPS  : P_VEC_MOV {};
@@ -69,13 +100,50 @@ namespace SBA::Lift::X86_64 {
     struct COMISD  : P_VEC_CMP<64> {};
     struct UCOMISS : P_VEC_CMP<32> {};
     struct UCOMISD : P_VEC_CMP<64> {};
+    struct MOVNTDQ  : P_VEC_MOV {};
+    struct MOVNTPS  : P_VEC_MOV {};
+    struct MOVNTPD  : P_VEC_MOV {};
+    struct MOVNTDQA : P_VEC_MOV {};
+    struct MOVNTSS {
+        template <uint8_t l>
+        static constexpr Pattern _ = { { mr_12<O::VAL,32>() } };
+    };
+    struct MOVNTSD {
+        template <uint8_t l>
+        static constexpr Pattern _ = { { mr_12<O::VAL,64>() } };
+    };
+    struct MOVDI2PDI {
+        P(rr,  { mcop<O::ZEXT>(DR(0)[0,128], DR(1)[0,32]) });
+        PM(rm, { rm_12<O::ZEXT,32>() });
+    };
+    struct MOVPDI2DI {
+        P(rr,  { mcop<O::ZEXT>(DR(0)[0,64], DR(1)[0,32]) });
+        PM(mr, { mr_12<O::VAL,32>() });
+    };
+    struct MOV64toPQI {
+        P(rr,  { mcop<O::ZEXT>(DR(0)[0,128], DR(1)[0,64]) });
+        PM(rm, { rm_12<O::ZEXT,64>() });
+    };
+    struct MOVPQIto64 {
+        P(rr,  { mcop<O::VAL>(DR(0)[0,64], DR(1)[0,64]) });
+        PM(mr, { mr_12<O::VAL,64>() });
+    };
+    struct MOVQI2PQI : MOV64toPQI {};
+    struct MOVPQI2QI : MOVPQIto64 {};
+    struct PEXTRB : P_PEXTR<8> {};
+    struct PEXTRW : P_PEXTR<16> {};
+    struct PEXTRD : P_PEXTR<32> {};
+    struct PEXTRQ : P_PEXTR<64> {};
 
     using Mnemonics_VEC = SBA::Util::TypeList<
         MOVAPS, MOVUPS, MOVAPD, MOVUPD, MOVDQA, MOVDQU,
         MOVSS, MOVSD,
         ADDSS, ADDSD, SUBSS, SUBSD, MULSS, MULSD, DIVSS, DIVSD,
         XORPS, XORPD, ANDPS, ANDPD, ORPS, ORPD,
-        COMISS, COMISD, UCOMISS, UCOMISD
+        COMISS, COMISD, UCOMISS, UCOMISD,
+        MOVNTDQ, MOVNTPS, MOVNTPD, MOVNTDQA, MOVNTSS, MOVNTSD,
+        MOVDI2PDI, MOVPDI2DI, MOV64toPQI, MOVPQIto64, MOVQI2PQI, MOVPQI2QI,
+        PEXTRB, PEXTRW, PEXTRD, PEXTRQ
     >;
 
     #undef PM

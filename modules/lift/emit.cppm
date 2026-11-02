@@ -13,7 +13,7 @@ import :target;
 import :decode;
 import :parse;
 
-export namespace SBA::Lift {
+namespace SBA::Lift {
 
     using namespace SBA::IR;
     using SBA::Arch::Target;
@@ -190,7 +190,7 @@ export namespace SBA::Lift {
         constexpr MCOperation(
             Operator opcode,
             Args&&... args) noexcept
-            : opcode(opcode), operands { static_cast<MCOperand>(args)... } {}
+            : opcode(opcode), operands { ((MCOperand)args)... } {}
     };
 
     template <Target T, typename... MCOperations>

@@ -10,26 +10,38 @@ import :x86_64_pattern;
 
 namespace SBA::Lift::X86_64 {
 
+    inline constexpr bool HAS_REP(MCInstruction inst) noexcept {
+        return inst.getFlags() & 0x8;
+    }
+
+    inline constexpr bool HAS_REPE(MCInstruction inst) noexcept {
+        return inst.getFlags() & 0x8;
+    }
+
+    inline constexpr bool HAS_REPNE(MCInstruction inst) noexcept {
+        return inst.getFlags() & 0x4;
+    }
+
     template <uint8_t l, uint8_t lm = l>
     struct P_MOVS {
         template <uint8_t>
         static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             if (HAS_REP(inst)) {
-                static constexpr MCOP ops[] = {
+                static constexpr MCOP core[] = {
                     mcop<O::S_VAL>(M(RDI)[lm], M(RSI)[lm], R(RCX)),
                     mcop<O::VAL>(R(RDI), A(RDI+(RCX<<bits_to_lbytes(lm)))),
                     mcop<O::VAL>(R(RSI), A(RSI+(RCX<<bits_to_lbytes(lm)))),
                     mcop<O::VAL>(R(RCX), 0ULL)
                 };
-                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
             }
-            static constexpr MCOP ops[] = {
+            static constexpr MCOP core[] = {
                 mcop<O::VAL>(M(RDI)[lm], M(RSI)[lm]),
                 mcop<O::VAL>(R(RDI), A(RDI+bits_to_bytes(lm))),
                 mcop<O::VAL>(R(RSI), A(RSI+bits_to_bytes(lm)))
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
 
@@ -38,14 +50,14 @@ namespace SBA::Lift::X86_64 {
         template <O s_op>
         static Instruction rep(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
-            static constexpr MCOP ops[] = {
+            static constexpr MCOP core[] = {
                 mcop<s_op>(R(TMP1), M(RSI)[lm], M(RDI)[lm], R(RCX)),
                 mcop<O::VAL>(R(RSI), A(RSI+(TMP1<<bits_to_lbytes(lm)))),
                 mcop<O::VAL>(R(RDI), A(RDI+(TMP1<<bits_to_lbytes(lm)))),
                 mcop<O::SUB>(R(RCX), R(RCX), R(TMP1)),
                 mcop<O::CMP>(R(FLAGS)[0,lm], M(RSI-bits_to_bytes(lm))[lm], M(RDI-bits_to_bytes(lm))[lm])
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
 
         template <uint8_t>
@@ -53,12 +65,12 @@ namespace SBA::Lift::X86_64 {
         {
             if (HAS_REPNE(inst)) return rep<O::S_NE>(ctx, cache, inst);
             if (HAS_REPE(inst))  return rep<O::S_EQ>(ctx, cache, inst);
-            static constexpr MCOP ops[] = {
+            static constexpr MCOP core[] = {
                 mcop<O::VAL>(R(RSI), A(RSI+bits_to_bytes(lm))),
                 mcop<O::VAL>(R(RDI), A(RDI+bits_to_bytes(lm))),
                 mcop<O::CMP>(R(FLAGS)[0,lm], M(RSI-bits_to_bytes(lm))[lm], M(RDI-bits_to_bytes(lm))[lm])
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
 
@@ -68,18 +80,18 @@ namespace SBA::Lift::X86_64 {
         static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             if (HAS_REP(inst)) {
-                static constexpr MCOP ops[] = {
+                static constexpr MCOP core[] = {
                     mcop<O::S_VAL>(M(RDI)[lm], R(RAX)[0,lm], R(RCX)),
                     mcop<O::VAL>(R(RDI), A(RDI+(RCX<<bits_to_lbytes(lm)))),
                     mcop<O::VAL>(R(RCX), 0ULL)
                 };
-                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
             }
-            static constexpr MCOP ops[] = {
+            static constexpr MCOP core[] = {
                 mcop<O::VAL>(M(RDI)[lm], R(RAX)[0,lm]),
                 mcop<O::VAL>(R(RDI), A(RDI+bits_to_bytes(lm)))
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
 
@@ -89,18 +101,18 @@ namespace SBA::Lift::X86_64 {
         static Instruction _(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             if (HAS_REP(inst)) {
-                static constexpr MCOP ops[] = {
+                static constexpr MCOP core[] = {
                     mcop<O::VAL>(R(RAX)[0,lm], M(RSI+(RCX<<bits_to_lbytes(lm))-bits_to_bytes(lm))[lm]),
                     mcop<O::VAL>(R(RSI), A(RSI+(RCX<<bits_to_lbytes(lm)))),
                     mcop<O::VAL>(R(RCX), 0ULL)
                 };
-                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
             }
-            static constexpr MCOP ops[] = {
+            static constexpr MCOP core[] = {
                 mcop<O::VAL>(R(RAX)[0,lm], M(RSI)[lm]),
                 mcop<O::VAL>(R(RSI), A(RSI+bits_to_bytes(lm)))
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
 
@@ -109,13 +121,13 @@ namespace SBA::Lift::X86_64 {
         template <O s_op>
         static Instruction rep(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
-            static constexpr MCOP ops[] = {
+            static constexpr MCOP core[] = {
                 mcop<s_op>(R(TMP1), R(RAX)[0,lm], M(RDI)[lm], R(RCX)),
                 mcop<O::VAL>(R(RDI), A(RDI+(TMP1<<bits_to_lbytes(lm)))),
                 mcop<O::SUB>(R(RCX), R(RCX), R(TMP1)),
                 mcop<O::CMP>(R(FLAGS)[0,lm], R(RAX)[0,lm], M(RDI-bits_to_bytes(lm))[lm])
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
 
         template <uint8_t>
@@ -123,11 +135,11 @@ namespace SBA::Lift::X86_64 {
         {
             if (HAS_REPNE(inst)) return rep<O::S_NE>(ctx, cache, inst);
             if (HAS_REPE(inst))  return rep<O::S_EQ>(ctx, cache, inst);
-            static constexpr MCOP ops[] = {
+            static constexpr MCOP core[] = {
                 mcop<O::VAL>(R(RDI), A(RDI+bits_to_bytes(lm))),
                 mcop<O::CMP>(R(FLAGS)[0,lm], R(RAX)[0,lm], M(RDI-bits_to_bytes(lm))[lm])
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
 

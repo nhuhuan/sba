@@ -118,7 +118,7 @@ namespace SBA::Lift::X86_64 {
         template <uint8_t l>
         static Instruction i(Context& ctx, Cache& cache, const MCInstruction& inst) {
             auto vec = inst.getOperand(0).getImm();
-            const MCOP ops[] = {
+            const MCOP core[] = {
                 mcop<O::VAL>(R(RSP), A(RSP-40)),
                 mcop<O::VAL>(M(RSP), R(RIP)),
                 mcop<O::VAL>(M(RSP+8)[16], R(CS)[0,16]),
@@ -127,7 +127,7 @@ namespace SBA::Lift::X86_64 {
                 mcop<O::VAL>(M(RSP+32)[16], R(SS)[0,16]),
                 mcop<O::VAL>(R(RIP), M(IDTR+(vec<<4)))
             };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
     struct INT3 {

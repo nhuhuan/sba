@@ -37,7 +37,6 @@ export namespace SBA::IR {
         OP(POP,        2, "cbs",        "pop_count(a)")                       \
         OP(ZEXT,       2, "zext",       "zero_extend(a)")                     \
         OP(SEXT,       2, "sext",       "sign_extend(a)")                     \
-        OP(TRUNC,      2, "trunc",      "truncate(a)")                        \
         OP(FNEG,       2, "fneg",       "-float(a)")                          \
         /* Arity 3 */                                                         \
         OP(ADD,        3, "add",        "a  +   b")                           \
@@ -63,8 +62,6 @@ export namespace SBA::IR {
         OP(UMULH,      3, "umulh",      "high_u(a * b)")                      \
         OP(MIN,        3, "min",        "min(a, b)")                          \
         OP(MAX,        3, "max",        "max(a, b)")                          \
-        OP(ROL,        3, "rol",        "rotate_left(a, b)")                  \
-        OP(ROR,        3, "ror",        "rotate_right(a, b)")                 \
         OP(S_VAL,      3, "s_val",      "string(a, l)")                       \
         /* Arity 4 */                                                         \
         OP(S_EQ,       4, "s_eq",       "count_while(a == b, l)")             \
@@ -138,7 +135,6 @@ export namespace SBA::IR {
                 case Operator::POP:         return T::pop(a);
                 case Operator::ZEXT:        return T::zext(a);
                 case Operator::SEXT:        return T::sext(a);
-                case Operator::TRUNC:       return T::trunc(a);
                 case Operator::FNEG:        return T::fneg(a);
                 default:                    std::unreachable();
             }
@@ -170,8 +166,6 @@ export namespace SBA::IR {
                 case Operator::UMULH:       return T::umulh(a, b);
                 case Operator::MIN:         return T::min(a, b);
                 case Operator::MAX:         return T::max(a, b);
-                case Operator::ROL:         return T::rol(a, b);
-                case Operator::ROR:         return T::ror(a, b);
                 default:                    std::unreachable();
             }
         }
@@ -201,5 +195,7 @@ export namespace SBA::IR {
 
     inline constexpr size_t MAX_OPERATIONS = 7;
     inline constexpr size_t MAX_OPERANDS = MAX_OPERATIONS * MAX_ARITY;
+
+    #undef OPERATOR_LIST
 
 }

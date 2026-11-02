@@ -71,64 +71,78 @@ namespace SBA::Lift::X86_64 {
 
     template <O op_h, O op_l>
     struct P_MUL {
-        P(r,   { r_xx1<op_l>(R(TMP1)[0,l], R(RAX)[0,l]),
-                 r_xx1<op_h>(R(RDX)[0,l], R(RAX)[0,l]),
-                 mcop<O::VAL>(R(RAX)[0,l], R(TMP1)[0,l]),
-                 zero_high32<l>(R(RAX)),
-                 zero_high32<l>(R(RDX)) },
-               { mcop<O::CMP>(R(FLAGS)[0,l], R(RDX)[0,l], 0) });
-        PM(m,  { m_xx1<op_l,lm>(R(TMP1)[0,l], R(RAX)[0,l]),
-                 m_xx1<op_h,lm>(R(RDX)[0,l], R(RAX)[0,l]),
-                 mcop<O::VAL>(R(RAX)[0,l], R(TMP1)[0,l]),
-                 zero_high32<l>(R(RAX)),
-                 zero_high32<l>(R(RDX)) },
-               { mcop<O::CMP>(R(FLAGS)[0,l], R(RDX)[0,l], 0) });
-        template <>
-        constexpr Pattern r<8> = {
-            { r_xx1<op_l>(R(TMP1)[0,8], R(RAX)[0,8]),
-              r_xx1<op_h>(R(RAX)[8,16], R(RAX)[0,8]),
-              mcop<O::VAL>(R(RAX)[0,8], R(TMP1)[0,8]) },
-            { mcop<O::CMP>(R(FLAGS)[0,8], R(RAX)[8,16], 0) }
-        };
-        template <>
-        constexpr Pattern m<8,8> = {
-            { m_xx1<op_l,8>(R(TMP1)[0,8], R(RAX)[0,8]),
-              m_xx1<op_h,8>(R(RAX)[8,16], R(RAX)[0,8]),
-              mcop<O::VAL>(R(RAX)[0,8], R(TMP1)[0,8]) },
-            { mcop<O::CMP>(R(FLAGS)[0,8], R(RAX)[8,16], 0) }
-        };
+        template <uint8_t l>
+        static constexpr Pattern r = (l == 8) ?
+            Pattern {
+                { r_xx1<op_l>(R(TMP1)[0,8], R(RAX)[0,8]),
+                  r_xx1<op_h>(R(RAX)[8,16], R(RAX)[0,8]),
+                  mcop<O::VAL>(R(RAX)[0,8], R(TMP1)[0,8]) },
+                { mcop<O::CMP>(R(FLAGS)[0,8], R(RAX)[8,16], 0) }
+            } :
+            Pattern {
+                { r_xx1<op_l>(R(TMP1)[0,l], R(RAX)[0,l]),
+                  r_xx1<op_h>(R(RDX)[0,l], R(RAX)[0,l]),
+                  mcop<O::VAL>(R(RAX)[0,l], R(TMP1)[0,l]),
+                  zero_high32<l>(R(RAX)),
+                  zero_high32<l>(R(RDX)) },
+                { mcop<O::CMP>(R(FLAGS)[0,l], R(RDX)[0,l], 0) }
+            };
+
+        template <uint8_t l, uint8_t lm = l>
+        static constexpr Pattern m = (l == 8 && lm == 8) ?
+            Pattern {
+                { m_xx1<op_l,8>(R(TMP1)[0,8], R(RAX)[0,8]),
+                  m_xx1<op_h,8>(R(RAX)[8,16], R(RAX)[0,8]),
+                  mcop<O::VAL>(R(RAX)[0,8], R(TMP1)[0,8]) },
+                { mcop<O::CMP>(R(FLAGS)[0,8], R(RAX)[8,16], 0) }
+            } :
+            Pattern {
+                { m_xx1<op_l,lm>(R(TMP1)[0,l], R(RAX)[0,l]),
+                  m_xx1<op_h,lm>(R(RDX)[0,l], R(RAX)[0,l]),
+                  mcop<O::VAL>(R(RAX)[0,l], R(TMP1)[0,l]),
+                  zero_high32<l>(R(RAX)),
+                  zero_high32<l>(R(RDX)) },
+                { mcop<O::CMP>(R(FLAGS)[0,l], R(RDX)[0,l], 0) }
+            };
     };
 
     template <O op_h, O op_l>
     struct P_DIV {
-        P(r,   { mcop<O::CAT>(R(TMP1)[0,l*2], R(RDX)[0,l], R(RAX)[0,l]),
-                 r_xx1<op_h>(R(TMP2)[0,l], R(TMP1)[0,l*2]),
-                 r_xx1<op_l>(R(RAX)[0,l], R(TMP1)[0,l*2]),
-                 mcop<O::VAL>(R(RDX)[0,l], R(TMP2)[0,l]),
-                 zero_high32<l>(R(RAX)),
-                 zero_high32<l>(R(RDX)) },
-               { mcop<O::CLB>(R(FLAGS)[0,l]) });
-        PM(m,  { mcop<O::CAT>(R(TMP1)[0,l*2], R(RDX)[0,l], R(RAX)[0,l]),
-                 m_xx1<op_h,lm>(R(TMP2)[0,l], R(TMP1)[0,l*2]),
-                 m_xx1<op_l,lm>(R(RAX)[0,l], R(TMP1)[0,l*2]),
-                 mcop<O::VAL>(R(RDX)[0,l], R(TMP2)[0,l]),
-                 zero_high32<l>(R(RAX)),
-                 zero_high32<l>(R(RDX)) },
-               { mcop<O::CLB>(R(FLAGS)[0,l]) });
-        template <>
-        constexpr Pattern r<8> = {
-            { r_xx1<op_h>(R(TMP1)[0,8], R(RAX)[0,16]),
-              r_xx1<op_l>(R(RAX)[0,8], R(RAX)[0,16]),
-              mcop<O::VAL>(R(RAX)[8,16], R(TMP1)[0,8]) },
-            { mcop<O::CLB>(R(FLAGS)[0,8]) }
-        };
-        template <>
-        constexpr Pattern m<8,8> = {
-            { m_xx1<op_h,8>(R(TMP1)[0,8], R(RAX)[0,16]),
-              m_xx1<op_l,8>(R(RAX)[0,8], R(RAX)[0,16]),
-              mcop<O::VAL>(R(RAX)[8,16], R(TMP1)[0,8]) },
-            { mcop<O::CLB>(R(FLAGS)[0,8]) }
-        };
+        template <uint8_t l>
+        static constexpr Pattern r = (l == 8) ?
+            Pattern {
+                { r_xx1<op_h>(R(TMP1)[0,8], R(RAX)[0,16]),
+                  r_xx1<op_l>(R(RAX)[0,8], R(RAX)[0,16]),
+                  mcop<O::VAL>(R(RAX)[8,16], R(TMP1)[0,8]) },
+                { mcop<O::CLB>(R(FLAGS)[0,8]) }
+            } :
+            Pattern {
+                { mcop<O::CAT>(R(TMP1)[0,l*2], R(RDX)[0,l], R(RAX)[0,l]),
+                  r_xx1<op_h>(R(TMP2)[0,l], R(TMP1)[0,l*2]),
+                  r_xx1<op_l>(R(RAX)[0,l], R(TMP1)[0,l*2]),
+                  mcop<O::VAL>(R(RDX)[0,l], R(TMP2)[0,l]),
+                  zero_high32<l>(R(RAX)),
+                  zero_high32<l>(R(RDX)) },
+                { mcop<O::CLB>(R(FLAGS)[0,l]) }
+            };
+
+        template <uint8_t l, uint8_t lm = l>
+        static constexpr Pattern m = (l == 8 && lm == 8) ?
+            Pattern {
+                { m_xx1<op_h,8>(R(TMP1)[0,8], R(RAX)[0,16]),
+                  m_xx1<op_l,8>(R(RAX)[0,8], R(RAX)[0,16]),
+                  mcop<O::VAL>(R(RAX)[8,16], R(TMP1)[0,8]) },
+                { mcop<O::CLB>(R(FLAGS)[0,8]) }
+            } :
+            Pattern {
+                { mcop<O::CAT>(R(TMP1)[0,l*2], R(RDX)[0,l], R(RAX)[0,l]),
+                  m_xx1<op_h,lm>(R(TMP2)[0,l], R(TMP1)[0,l*2]),
+                  m_xx1<op_l,lm>(R(RAX)[0,l], R(TMP1)[0,l*2]),
+                  mcop<O::VAL>(R(RDX)[0,l], R(TMP2)[0,l]),
+                  zero_high32<l>(R(RAX)),
+                  zero_high32<l>(R(RDX)) },
+                { mcop<O::CLB>(R(FLAGS)[0,l]) }
+            };
     };
 
     template <O op>
@@ -190,6 +204,89 @@ namespace SBA::Lift::X86_64 {
                { rrm_x23x<O::CCMP,lm,true>(R(FLAGS)[0,l], c) });
     };
 
+    template <O op, bool inv = false>
+    struct P_BT_CHG {
+        template <uint8_t l>
+        static constexpr MCOP invert() noexcept {
+            if constexpr (inv)
+                return mcop<O::NOT>(R(TMP1)[0,l], R(TMP1)[0,l]);
+            else
+                return mcop<O::_>();
+        }
+        P(rr,  { mcop<O::SHL>(R(TMP1)[0,l], 1ULL, DR(2)[0,8]),
+                 invert<l>(),
+                 mcop<O::SHR>(R(TMP2)[0,1], DR(1)[0,l], DR(2)[0,8]),
+                 mcop<op>(DR(0), DR(1)[0,l], R(TMP1)[0,l]),
+                 zero_high32<l>(DR(0)) },
+               { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) });
+        P(ri,  { mcop<O::SHL>(R(TMP1)[0,l], 1ULL, DI(2)),
+                 invert<l>(),
+                 mcop<O::SHR>(R(TMP2)[0,1], DR(1)[0,l], DI(2)),
+                 mcop<op>(DR(0), DR(1)[0,l], R(TMP1)[0,l]),
+                 zero_high32<l>(DR(0)) },
+               { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) });
+        PM(mr, { mcop<O::SHL>(R(TMP1)[0,lm], 1ULL, DR(5)[0,8]),
+                 invert<lm>(),
+                 mcop<O::SHR>(R(TMP2)[0,1], DM(0)[lm], DR(5)[0,8]),
+                 mcop<op>(DM(0)[lm], DM(0)[lm], R(TMP1)[0,lm]) },
+               { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) });
+        PM(mi, { mcop<O::SHL>(R(TMP1)[0,lm], 1ULL, DI(5)),
+                 invert<lm>(),
+                 mcop<O::SHR>(R(TMP2)[0,1], DM(0)[lm], DI(5)),
+                 mcop<op>(DM(0)[lm], DM(0)[lm], R(TMP1)[0,lm]) },
+               { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) });
+    };
+
+    template <O op_dest, O op_src>
+    struct P_SHD {
+        P(rrCL,  { mcop<op_dest>(R(TMP1)[0,l], DR(1)[0,l], R(RCX)[0,8]),
+                   mcop<O::SUB>(R(TMP2)[0,8], l, R(RCX)[0,8]),
+                   mcop<op_src>(R(TMP2)[0,l], DR(2)[0,l], R(TMP2)[0,8]),
+                   mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                   zero_high32<l>(DR(0)) },
+                 { r_x1x<O::CMP>(R(FLAGS)[0,l], 0) });
+        PM(mrCL, { mcop<op_dest>(R(TMP1)[0,lm], DM(0)[lm], R(RCX)[0,8]),
+                   mcop<O::SUB>(R(TMP2)[0,8], lm, R(RCX)[0,8]),
+                   mcop<op_src>(R(TMP2)[0,lm], DR(5)[0,lm], R(TMP2)[0,8]),
+                   mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm]) },
+                 { m_x1x<O::CMP,lm>(R(FLAGS)[0,l], 0) });
+        template <uint8_t l>
+        static Instruction rri(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t shift = (uint64_t)inst.getOperand(3).getImm() % l;
+            if (shift == 0)
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst);
+            MCOP core[] = {
+                mcop<op_dest>(R(TMP1)[0,l], DR(1)[0,l], shift),
+                mcop<op_src>(R(TMP2)[0,l], DR(2)[0,l], l-shift),
+                mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                zero_high32<l>(DR(0))
+            };
+            MCOP flag[] = { r_x1x<O::CMP>(R(FLAGS)[0,l], 0) };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+        }
+        template <uint8_t l, uint8_t lm = l>
+        static Instruction mri(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t shift = (uint64_t)inst.getOperand(6).getImm() % lm;
+            if (shift == 0)
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst);
+            MCOP core[] = {
+                mcop<op_dest>(R(TMP1)[0,lm], DM(0)[lm], shift),
+                mcop<op_src>(R(TMP2)[0,lm], DR(5)[0,lm], lm-shift),
+                mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm])
+            };
+            MCOP flag[] = { m_x1x<O::CMP,lm>(R(FLAGS)[0,l], 0) };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+        }
+    };
+
     /* -----------------------------------------------------------------------*/
 
     struct ADD  : P_ALU<O::ADD,true> {};
@@ -232,8 +329,6 @@ namespace SBA::Lift::X86_64 {
     struct SHL : P_SHIFT<O::SHL> {};
     struct SHR : P_SHIFT<O::SHR> {};
     struct SAR : P_SHIFT<O::ASHR> {};
-    struct ROL : P_SHIFT<O::ROL> {};
-    struct ROR : P_SHIFT<O::ROR> {};
     struct BSWAP {
         P(r,   { rr_12<O::REV>(),
                  zero_high32<l>(DR(0)) });
@@ -318,6 +413,345 @@ namespace SBA::Lift::X86_64 {
     };
     struct ADCX : P_CADD_EXT<R(FLAGS)[0]>  {}; /* CF */
     struct ADOX : P_CADD_EXT<R(FLAGS)[11]> {}; /* OF */
+    struct BT {
+        P(rr,  { mcop<O::SHR>(R(FLAGS)[0,1], DR(0)[0,l], DR(1)[0,8]) });
+        P(ri,  { mcop<O::SHR>(R(FLAGS)[0,1], DR(0)[0,l], DI(1)) });
+        PM(mr, { mcop<O::SHR>(R(FLAGS)[0,1], DM(0)[lm], DR(5)[0,8]) });
+        PM(mi, { mcop<O::SHR>(R(FLAGS)[0,1], DM(0)[lm], DI(5)) });
+    };
+    struct BTS : P_BT_CHG<O::OR> {};
+    struct BTC : P_BT_CHG<O::XOR> {};
+    struct BTR : P_BT_CHG<O::AND,true> {};
+    struct SHLD : P_SHD<O::SHL, O::SHR> {};
+    struct SHRD : P_SHD<O::SHR, O::SHL> {};
+    struct ROL {
+        P(r1,   { mcop<O::SHL>(R(TMP1)[0,l], DR(1)[0,l], 1),
+                  mcop<O::VAL>(R(TMP2)[0,1], DR(1)[l-1,l]),
+                  mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,1]),
+                  zero_high32<l>(DR(0)) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) });
+        P(rCL,  { mcop<O::SHL>(R(TMP1)[0,l], DR(1)[0,l], R(RCX)[0,8]),
+                  mcop<O::SUB>(R(TMP2)[0,8], l, R(RCX)[0,8]),
+                  mcop<O::SHR>(R(TMP2)[0,l], DR(1)[0,l], R(TMP2)[0,8]),
+                  mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                  zero_high32<l>(DR(0)) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) });
+        PM(m1,  { mcop<O::SHL>(R(TMP1)[0,lm], DM(0)[lm], 1),
+                  mcop<O::SHR>(R(TMP2)[0,1], DM(0)[lm], lm-1),
+                  mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,1]) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) });
+        PM(mCL, { mcop<O::SHL>(R(TMP1)[0,lm], DM(0)[lm], R(RCX)[0,8]),
+                  mcop<O::SUB>(R(TMP2)[0,8], lm, R(RCX)[0,8]),
+                  mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], R(TMP2)[0,8]),
+                  mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm]) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) });
+        template <uint8_t l>
+        static Instruction ri(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t k = (uint64_t)inst.getOperand(2).getImm() % l;
+            if (k == 0) {
+                MCOP core[] = {
+                    mcop<O::VAL>(DR(0), DR(1)[0,l]),
+                    zero_high32<l>(DR(0))
+                };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+            }
+            if (k == 1) {
+                MCOP core[] = {
+                    mcop<O::SHL>(R(TMP1)[0,l], DR(1)[0,l], 1),
+                    mcop<O::VAL>(R(TMP2)[0,1], DR(1)[l-1,l]),
+                    mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,1]),
+                    zero_high32<l>(DR(0))
+                };
+                MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+            }
+            MCOP core[] = {
+                mcop<O::SHL>(R(TMP1)[0,l], DR(1)[0,l], k),
+                mcop<O::SHR>(R(TMP2)[0,l], DR(1)[0,l], l-k),
+                mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                zero_high32<l>(DR(0))
+            };
+            MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+        }
+        template <uint8_t l, uint8_t lm = l>
+        static Instruction mi(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t k = (uint64_t)inst.getOperand(5).getImm() % lm;
+            if (k == 0)
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst);
+            if (k == 1) {
+                MCOP core[] = {
+                    mcop<O::SHL>(R(TMP1)[0,lm], DM(0)[lm], 1),
+                    mcop<O::SHR>(R(TMP2)[0,1], DM(0)[lm], lm-1),
+                    mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,1])
+                };
+                MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+            }
+            MCOP core[] = {
+                mcop<O::SHL>(R(TMP1)[0,lm], DM(0)[lm], k),
+                mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], lm-k),
+                mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm])
+            };
+            MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP2)[0,1]) };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+        }
+    };
+    struct ROR {
+        P(r1,   { mcop<O::SHL>(R(TMP1)[0,l], DR(1)[0,1], l-1),
+                  mcop<O::SHR>(R(TMP2)[0,l], DR(1)[0,l], 1),
+                  mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                  zero_high32<l>(DR(0)) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[l-1,l]) });
+        P(rCL,  { mcop<O::SUB>(R(TMP1)[0,8], l, R(RCX)[0,8]),
+                  mcop<O::SHL>(R(TMP1)[0,l], DR(1)[0,l], R(TMP1)[0,8]),
+                  mcop<O::SHR>(R(TMP2)[0,l], DR(1)[0,l], R(RCX)[0,8]),
+                  mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                  zero_high32<l>(DR(0)) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[l-1,l]) });
+        PM(m1,  { mcop<O::AND>(R(TMP1)[0,lm], DM(0)[lm], 1ULL),
+                  mcop<O::SHL>(R(TMP1)[0,lm], R(TMP1)[0,lm], lm-1),
+                  mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], 1),
+                  mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm]) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[lm-1,lm]) });
+        PM(mCL, { mcop<O::SUB>(R(TMP1)[0,8], lm, R(RCX)[0,8]),
+                  mcop<O::SHL>(R(TMP1)[0,lm], DM(0)[lm], R(TMP1)[0,8]),
+                  mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], R(RCX)[0,8]),
+                  mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm]) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[lm-1,lm]) });
+        template <uint8_t l>
+        static Instruction ri(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t k = (uint64_t)inst.getOperand(2).getImm() % l;
+            if (k == 0) {
+                MCOP core[] = {
+                    mcop<O::VAL>(DR(0), DR(1)[0,l]),
+                    zero_high32<l>(DR(0))
+                };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+            }
+            if (k == 1) {
+                MCOP core[] = {
+                    mcop<O::SHL>(R(TMP1)[0,l], DR(1)[0,1], l-1),
+                    mcop<O::SHR>(R(TMP2)[0,l], DR(1)[0,l], 1),
+                    mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                    zero_high32<l>(DR(0))
+                };
+                MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[l-1,l]) };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+            }
+            MCOP core[] = {
+                mcop<O::SHL>(R(TMP1)[0,l], DR(1)[0,l], l-k),
+                mcop<O::SHR>(R(TMP2)[0,l], DR(1)[0,l], k),
+                mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                zero_high32<l>(DR(0))
+            };
+            MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[l-1,l]) };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+        }
+        template <uint8_t l, uint8_t lm = l>
+        static Instruction mi(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t k = (uint64_t)inst.getOperand(5).getImm() % lm;
+            if (k == 0)
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst);
+            if (k == 1) {
+                MCOP core[] = {
+                    mcop<O::AND>(R(TMP1)[0,lm], DM(0)[lm], 1ULL),
+                    mcop<O::SHL>(R(TMP1)[0,lm], R(TMP1)[0,lm], lm-1),
+                    mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], 1),
+                    mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm])
+                };
+                MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[lm-1,lm]) };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+            }
+            MCOP core[] = {
+                mcop<O::SHL>(R(TMP1)[0,lm], DM(0)[lm], lm-k),
+                mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], k),
+                mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm])
+            };
+            MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[lm-1,lm]) };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+        }
+    };
+    struct RCL {
+        P(r1,   { mcop<O::VAL>(R(TMP1)[0,1], DR(1)[l-1,l]),
+                  mcop<O::SHL>(R(TMP2)[0,l], DR(1)[0,l], 1),
+                  mcop<O::OR>(DR(0), R(TMP2)[0,l], R(FLAGS)[0,1]),
+                  zero_high32<l>(DR(0)) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[0,1]) });
+        P(rCL,  { mcop<O::SUB>(R(TMP1)[0,8], l, R(RCX)[0,8]),
+                  mcop<O::SHR>(R(FLAGS)[0,1], DR(1)[0,l], R(TMP1)[0,8]),
+                  mcop<O::CLB>(DR(0)[0,l]),
+                  zero_high32<l>(DR(0)) });
+        PM(m1,  { mcop<O::SHR>(R(TMP1)[0,1], DM(0)[lm], lm-1),
+                  mcop<O::SHL>(R(TMP2)[0,lm], DM(0)[lm], 1),
+                  mcop<O::OR>(DM(0)[lm], R(TMP2)[0,lm], R(FLAGS)[0,1]) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[0,1]) });
+        PM(mCL, { mcop<O::SUB>(R(TMP1)[0,8], lm, R(RCX)[0,8]),
+                  mcop<O::SHR>(R(FLAGS)[0,1], DM(0)[lm], R(TMP1)[0,8]),
+                  mcop<O::CLB>(DM(0)[lm]) });
+        template <uint8_t l>
+        static Instruction ri(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t k = (uint64_t)inst.getOperand(2).getImm() % (l+1);
+            if (k == 0) {
+                MCOP core[] = {
+                    mcop<O::VAL>(DR(0), DR(1)[0,l]),
+                    zero_high32<l>(DR(0))
+                };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+            }
+            if (k == 1) {
+                MCOP core[] = {
+                    mcop<O::VAL>(R(TMP1)[0,1], DR(1)[l-1,l]),
+                    mcop<O::SHL>(R(TMP2)[0,l], DR(1)[0,l], 1),
+                    mcop<O::OR>(DR(0), R(TMP2)[0,l], R(FLAGS)[0,1]),
+                    zero_high32<l>(DR(0))
+                };
+                MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[0,1]) };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+            }
+            MCOP core[] = {
+                mcop<O::SHL>(R(TMP1)[0,l], R(FLAGS)[0,1], k-1),
+                mcop<O::VAL>(R(FLAGS)[0,1], DR(1)[l-k,l-k+1]),
+                mcop<O::SHL>(R(TMP2)[0,l], DR(1)[0,l], k),
+                mcop<O::OR>(R(TMP1)[0,l], R(TMP1)[0,l], R(TMP2)[0,l]),
+                mcop<O::SHR>(R(TMP2)[0,l], DR(1)[0,l], l+1-k),
+                mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                zero_high32<l>(DR(0))
+            };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+        }
+        template <uint8_t l, uint8_t lm = l>
+        static Instruction mi(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t k = (uint64_t)inst.getOperand(5).getImm() % (lm+1);
+            if (k == 0)
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst);
+            if (k == 1) {
+                MCOP core[] = {
+                    mcop<O::SHR>(R(TMP1)[0,1], DM(0)[lm], lm-1),
+                    mcop<O::SHL>(R(TMP2)[0,lm], DM(0)[lm], 1),
+                    mcop<O::OR>(DM(0)[lm], R(TMP2)[0,lm], R(FLAGS)[0,1])
+                };
+                MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[0,1]) };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+            }
+            MCOP core[] = {
+                mcop<O::SHL>(R(TMP1)[0,lm], R(FLAGS)[0,1], k-1),
+                mcop<O::SHR>(R(FLAGS)[0,1], DM(0)[lm], lm-k),
+                mcop<O::SHL>(R(TMP2)[0,lm], DM(0)[lm], k),
+                mcop<O::OR>(R(TMP1)[0,lm], R(TMP1)[0,lm], R(TMP2)[0,lm]),
+                mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], lm+1-k),
+                mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm])
+            };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+        }
+    };
+    struct RCR {
+        P(r1,   { mcop<O::VAL>(R(TMP1)[0,1], DR(1)[0,1]),
+                  mcop<O::SHL>(R(TMP2)[0,l], R(FLAGS)[0,1], l-1),
+                  mcop<O::SHR>(DR(0), DR(1)[0,l], 1),
+                  mcop<O::OR>(DR(0), DR(0), R(TMP2)[0,l]),
+                  zero_high32<l>(DR(0)) },
+                { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[0,1]) });
+        P(rCL,  { mcop<O::SUB>(R(TMP1)[0,8], R(RCX)[0,8], 1),
+                  mcop<O::SHR>(R(FLAGS)[0,1], DR(1)[0,l], R(TMP1)[0,8]),
+                  mcop<O::CLB>(DR(0)[0,l]),
+                  zero_high32<l>(DR(0)) });
+        PM(m1,  { mcop<O::SHL>(R(TMP1)[0,lm], R(FLAGS)[0,1], lm-1),
+                  mcop<O::AND>(R(FLAGS)[0,1], DM(0)[lm], 1ULL),
+                  mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], 1),
+                  mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm]) });
+        PM(mCL, { mcop<O::SUB>(R(TMP1)[0,8], R(RCX)[0,8], 1),
+                  mcop<O::SHR>(R(FLAGS)[0,1], DM(0)[lm], R(TMP1)[0,8]),
+                  mcop<O::CLB>(DM(0)[lm]) });
+        template <uint8_t l>
+        static Instruction ri(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t k = (uint64_t)inst.getOperand(2).getImm() % (l+1);
+            if (k == 0) {
+                MCOP core[] = {
+                    mcop<O::VAL>(DR(0), DR(1)[0,l]),
+                    zero_high32<l>(DR(0))
+                };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+            }
+            if (k == 1) {
+                MCOP core[] = {
+                    mcop<O::VAL>(R(TMP1)[0,1], DR(1)[0,1]),
+                    mcop<O::SHL>(R(TMP2)[0,l], R(FLAGS)[0,1], l-1),
+                    mcop<O::SHR>(DR(0), DR(1)[0,l], 1),
+                    mcop<O::OR>(DR(0), DR(0), R(TMP2)[0,l]),
+                    zero_high32<l>(DR(0))
+                };
+                MCOP flag[] = { mcop<O::VAL>(R(FLAGS)[0,1], R(TMP1)[0,1]) };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core, flag);
+            }
+            MCOP core[] = {
+                mcop<O::SHL>(R(TMP1)[0,l], R(FLAGS)[0,1], l-k),
+                mcop<O::VAL>(R(FLAGS)[0,1], DR(1)[k-1,k]),
+                mcop<O::SHR>(R(TMP2)[0,l], DR(1)[0,l], k),
+                mcop<O::OR>(R(TMP1)[0,l], R(TMP1)[0,l], R(TMP2)[0,l]),
+                mcop<O::SHL>(R(TMP2)[0,l], DR(1)[0,l], l+1-k),
+                mcop<O::OR>(DR(0), R(TMP1)[0,l], R(TMP2)[0,l]),
+                zero_high32<l>(DR(0))
+            };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+        }
+        template <uint8_t l, uint8_t lm = l>
+        static Instruction mi(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            uint64_t k = (uint64_t)inst.getOperand(5).getImm() % (lm+1);
+            if (k == 0)
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst);
+            if (k == 1) {
+                MCOP core[] = {
+                    mcop<O::SHL>(R(TMP1)[0,lm], R(FLAGS)[0,1], lm-1),
+                    mcop<O::AND>(R(FLAGS)[0,1], DM(0)[lm], 1ULL),
+                    mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], 1),
+                    mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm])
+                };
+                return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+            }
+            MCOP core[] = {
+                mcop<O::SHL>(R(TMP1)[0,lm], R(FLAGS)[0,1], lm-k),
+                mcop<O::SHR>(R(FLAGS)[0,1], DM(0)[lm], k-1),
+                mcop<O::SHR>(R(TMP2)[0,lm], DM(0)[lm], k),
+                mcop<O::OR>(R(TMP1)[0,lm], R(TMP1)[0,lm], R(TMP2)[0,lm]),
+                mcop<O::SHL>(R(TMP2)[0,lm], DM(0)[lm], lm+1-k),
+                mcop<O::OR>(DM(0)[lm], R(TMP1)[0,lm], R(TMP2)[0,lm])
+            };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+        }
+    };
 
     using Mnemonics_ALU = SBA::Util::TypeList<
         ADD, SUB, AND, OR, XOR, CMP, TEST, ADC, SBB,
@@ -325,7 +759,8 @@ namespace SBA::Lift::X86_64 {
         SHL, SHR, SAR, ROL, ROR, BSWAP, MOVBE,
         LZCNT, TZCNT, POPCNT, BSF, BSR,
         ANDN, BLSR, BLSMSK, BLSI, BZHI, BEXTR,
-        SARX, SHLX, SHRX, MULX, ADCX, ADOX
+        SARX, SHLX, SHRX, MULX, ADCX, ADOX,
+        BT, BTS, BTR, BTC, SHLD, SHRD, RCL, RCR
     >;
 
     #undef PM

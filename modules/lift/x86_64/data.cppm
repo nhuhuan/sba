@@ -128,8 +128,8 @@ namespace SBA::Lift::X86_64 {
             const MCInstruction& inst)
         {
             uint8_t cc = inst.getOperand(3).getImm();
-            MCOP ops[] = { { CC[cc], DR(0), R(FLAGS)[0,l], DR(2), DR(1) } };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            MCOP core[] = { { CC[cc], DR(0), R(FLAGS)[0,l], DR(2), DR(1) } };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
 
         template <uint8_t l, uint8_t lm = l>
@@ -139,8 +139,8 @@ namespace SBA::Lift::X86_64 {
             const MCInstruction& inst)
         {
             uint8_t cc = inst.getOperand(7).getImm();
-            MCOP ops[] = { { CC[cc], DR(0), R(FLAGS)[0,l], DM(2)[lm], DR(1) } };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            MCOP core[] = { { CC[cc], DR(0), R(FLAGS)[0,l], DM(2)[lm], DR(1) } };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
     struct SETCC {
@@ -148,16 +148,16 @@ namespace SBA::Lift::X86_64 {
         static Instruction r(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             uint8_t cc = inst.getOperand(1).getImm();
-            MCOP ops[] = { { CC[cc], DR(0), R(FLAGS), 1ULL, 0ULL } };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            MCOP core[] = { { CC[cc], DR(0), R(FLAGS), 1ULL, 0ULL } };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
 
         template <uint8_t l, uint8_t lm = l>
         static Instruction m(Context& ctx, Cache& cache, const MCInstruction& inst)
         {
             uint8_t cc = inst.getOperand(5).getImm();
-            MCOP ops[] = { { CC[cc], DM(0)[lm], R(FLAGS), 1ULL, 0ULL } };
-            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, ops);
+            MCOP core[] = { { CC[cc], DM(0)[lm], R(FLAGS), 1ULL, 0ULL } };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
         }
     };
     struct PUSH {
@@ -187,13 +187,41 @@ namespace SBA::Lift::X86_64 {
                mcop<O::VAL>(R(RBP)[0,l], M(RSP)[l]),
                mcop<O::VAL>(R(RSP), A(RSP+bits_to_bytes(l))) });
     };
+    struct ENTER {
+        template <uint8_t l>
+        static Instruction _(
+            Context& ctx,
+            Cache& cache,
+            const MCInstruction& inst)
+        {
+            constexpr uint8_t width = bits_to_bytes(l);
+            uint8_t level = inst.getOperand(1).getImm() % 32;
+            uint16_t size = inst.getOperand(0).getImm();
+
+            MCOP core[] = {
+                (level == 0)
+                    ? mcop<O::VAL>(M(RSP-width)[l], R(RBP)[0,l])
+                    : mcop<O::CLB>(ANY_MEM),
+                mcop<O::VAL>(R(RBP), A(RSP-width)),
+                mcop<O::VAL>(R(RSP), A(RSP-(width*(level+1)+size)))
+            };
+            return emit<SBA::Arch::Target::X86_64>(ctx, cache, inst, core);
+        }
+    };
+    struct MOVNTI {
+        PM(mr, { mr_12<O::VAL,32>() });
+    };
+    struct MOVNTI_64 {
+        PM(mr, { mr_12<O::VAL,64>() });
+    };
 
     using Mnemonics_DAT = SBA::Util::TypeList<
         MOVSX, MOVZX, MOV, LEA, XCHG, CMPXCHG,
         CMPXCHG8B, CMPXCHG16B, XADD,
-        PUSH, POP, PUSHF, POPF, LEAVE,
+        PUSH, POP, PUSHF, POPF, LEAVE, ENTER,
         CBW, CWDE, CDQE, CWD, CDQ, CQO,
-        CMOV, SETCC
+        CMOV, SETCC,
+        MOVNTI, MOVNTI_64
     >;
 
     #undef PM

@@ -11,7 +11,7 @@ export module sba.lift:x86_64_dispatch;
 
 import sba.arch;
 import sba.ir;
-export import sba.util;
+import sba.util;
 import :target;
 import :cache;
 import :emit;
@@ -40,6 +40,10 @@ namespace SBA::Lift::X86_64 {
             m1,
             rCL,
             mCL,
+            rrCL,
+            mrCL,
+            rri,
+            mri,
             _
         } schema;
 
@@ -144,6 +148,10 @@ namespace SBA::Lift::X86_64 {
         if (match_prefix(s, "b"))    return Suffix::Schema::mb;
         if (match_prefix(s, "rmm"))  return Suffix::Schema::m;
         if (match_prefix(s, "rmr"))  return Suffix::Schema::r;
+        if (match_prefix(s, "rrCL")) return Suffix::Schema::rrCL;
+        if (match_prefix(s, "mrCL")) return Suffix::Schema::mrCL;
+        if (match_prefix(s, "rri"))  return Suffix::Schema::rri;
+        if (match_prefix(s, "mri"))  return Suffix::Schema::mri;
         if (match_prefix(s, "rm"))   return Suffix::Schema::rm;
         if (match_prefix(s, "mr"))   return Suffix::Schema::mr;
         if (match_prefix(s, "mi"))   return Suffix::Schema::mi;
@@ -208,14 +216,14 @@ namespace SBA::Lift::X86_64 {
         if constexpr (NoFlags) {
             return emit<SBA::Arch::Target::X86_64>(
                 ctx, cache, inst,
-                std::span<const MCOperation>(Pattern.logic)
+                std::span<const MCOperation>(Pattern.core)
             );
         }
         else {
             return emit<SBA::Arch::Target::X86_64>(
                 ctx, cache, inst,
-                std::span<const MCOperation>(Pattern.logic),
-                std::span<const MCOperation>(Pattern.flags)
+                std::span<const MCOperation>(Pattern.core),
+                std::span<const MCOperation>(Pattern.flag)
             );
         }
     }
@@ -344,8 +352,12 @@ namespace SBA::Lift::X86_64 {
             case Suffix::Schema::oa:   DISPATCH(Mnemonic,   oa,   ld,     nf);
             case Suffix::Schema::r1:   DISPATCH(Mnemonic,   r1,   ld,     nf);
             case Suffix::Schema::rCL:  DISPATCH(Mnemonic,   rCL,  ld,     nf);
+            case Suffix::Schema::rrCL: DISPATCH(Mnemonic,   rrCL, ld,     nf);
+            case Suffix::Schema::rri:  DISPATCH(Mnemonic,   rri,  ld,     nf);
             case Suffix::Schema::rm:   DISPATCH_M(Mnemonic, rm,   ld, lm, nf);
             case Suffix::Schema::mr:   DISPATCH_M(Mnemonic, mr,   ld, lm, nf);
+            case Suffix::Schema::mrCL: DISPATCH_M(Mnemonic, mrCL, ld, lm, nf);
+            case Suffix::Schema::mri:  DISPATCH_M(Mnemonic, mri,  ld, lm, nf);
             case Suffix::Schema::mi:   DISPATCH_M(Mnemonic, mi,   ld, lm, nf);
             case Suffix::Schema::m:    DISPATCH_M(Mnemonic, m,    ld, lm, nf);
             case Suffix::Schema::m1:   DISPATCH_M(Mnemonic, m1,   ld, lm, nf);

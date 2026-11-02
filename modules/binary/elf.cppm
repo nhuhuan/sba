@@ -11,7 +11,7 @@ import sba.arch;
 import :types;
 import :error;
 
-export namespace SBA::Binary {
+namespace SBA::Binary {
 
     using SBA::Arch::Target;
 

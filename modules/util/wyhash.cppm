@@ -13,10 +13,10 @@ namespace SBA::Util {
 #if defined(__SIZEOF_INT128__)
         __uint128_t r = A;
         r *= B;
-        return static_cast<uint64_t>(r) ^ static_cast<uint64_t>(r >> 64);
+        return (uint64_t)r ^ (uint64_t)(r >> 64);
 #else
-        uint64_t ha = A >> 32, la = static_cast<uint32_t>(A);
-        uint64_t hb = B >> 32, lb = static_cast<uint32_t>(B);
+        uint64_t ha = A >> 32, la = (uint32_t)A;
+        uint64_t hb = B >> 32, lb = (uint32_t)B;
         uint64_t rh = ha * hb, rm0 = ha * lb, rm1 = la * hb, rl = la * lb;
         uint64_t t = rl + (rm0 << 32);
         uint64_t carry = t < rl;
@@ -53,7 +53,7 @@ export namespace SBA::Util {
         size_t len,
         uint64_t seed = 0) noexcept
     {
-        const uint8_t* p = static_cast<const uint8_t*>(key);
+        const uint8_t* p = (const uint8_t*)key;
         static constexpr uint64_t secret[4] = {
             0xa0761d6478bd642fULL,
             0xe7037ed1a0b428dbULL,
@@ -67,13 +67,13 @@ export namespace SBA::Util {
         if (len <= 16) {
             if (len >= 4) {
                 a = (wyhash_read4(p) << 32)
-                  | wyhash_read4(p + ((len >> 3) << 2));
+                  | (wyhash_read4(p + ((len >> 3) << 2)));
                 b = (wyhash_read4(p + len - 4) << 32)
-                  | wyhash_read4(p + len - 4 - ((len >> 3) << 2));
+                  | (wyhash_read4(p + len - 4 - ((len >> 3) << 2)));
             } else if (len > 0) {
-                a = (static_cast<uint64_t>(p[0]) << 16)
-                  | (static_cast<uint64_t>(p[len >> 1]) << 8)
-                  | p[len - 1];
+                a = ((uint64_t)p[0] << 16)
+                  | ((uint64_t)p[len >> 1] << 8)
+                  | (p[len - 1]);
                 b = 0;
             } else
                 a = b = 0;

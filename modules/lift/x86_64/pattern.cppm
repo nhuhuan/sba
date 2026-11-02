@@ -37,21 +37,9 @@ namespace SBA::Lift::X86_64 {
             }
         };
 
-        List logic;
-        List flags = {};
+        List core;
+        List flag = {};
     };
-
-    inline constexpr bool HAS_REP(MCInstruction inst) noexcept {
-        return inst.getFlags() & 0x8;
-    }
-
-    inline constexpr bool HAS_REPE(MCInstruction inst) noexcept {
-        return inst.getFlags() & 0x8;
-    }
-
-    inline constexpr bool HAS_REPNE(MCInstruction inst) noexcept {
-        return inst.getFlags() & 0x4;
-    }
 
     inline constexpr O CC[16] = {
         O::SELECT_O,
@@ -76,7 +64,7 @@ namespace SBA::Lift::X86_64 {
 
     template <O op, typename... Args>
     constexpr MCOP mcop(Args&&... args) noexcept {
-        return { op, static_cast<MCOperand>(args)... };
+        return { op, ((MCOperand)args)... };
     }
 
     template <uint8_t l>
